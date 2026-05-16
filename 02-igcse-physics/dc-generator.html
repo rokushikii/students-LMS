@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AC Generator 3D Simulation</title>
+    <title>DC Generator 3D Simulation</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -11,8 +11,8 @@
             --panel-inner: #334155;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
+            --accent: #10b981; /* Green accent for DC */
+            --accent-hover: #059669;
             --danger: #ef4444;
         }
 
@@ -205,7 +205,6 @@
             border-radius: 3px;
         }
 
-        /* Overlay Instructions */
         #instructions {
             position: absolute;
             top: 20px;
@@ -237,8 +236,8 @@
 
     <div id="ui-panel">
         <div class="header">
-            <h1>AC Generator</h1>
-            <p>Observe how a coil rotating in a magnetic field induces an alternating electromotive force (EMF) based on Faraday's Law.</p>
+            <h1>DC Generator</h1>
+            <p>Observe how a <strong>split-ring commutator</strong> acts as a mechanical rectifier. It reverses the connections to the external circuit every half-turn, producing a pulsating Direct Current (DC).</p>
         </div>
 
         <div class="card">
@@ -258,17 +257,14 @@
         </div>
 
         <div class="card">
-            <h3>Generated EMF (Voltage)</h3>
+            <h3>Generated Output (DC Voltage)</h3>
             <div id="graph-container">
                 <canvas id="emfGraph"></canvas>
             </div>
             <div class="graph-stats">
                 <span>Time &rarr;</span>
-                <span id="emfReadout">EMF: 0.00 V</span>
+                <span id="emfReadout">DC Output: 0.00 V</span>
             </div>
-            <p style="font-size: 12px; color: var(--text-muted); margin-top: 10px; line-height: 1.4;">
-                Peak EMF occurs when the coil is parallel to the magnetic field (cutting field lines fastest). Zero EMF occurs when perpendicular.
-            </p>
         </div>
 
         <div class="card">
@@ -276,7 +272,7 @@
             <div class="legend">
                 <div class="legend-item"><div class="color-box" style="background: #ef4444;"></div> North Pole</div>
                 <div class="legend-item"><div class="color-box" style="background: #3b82f6;"></div> South Pole</div>
-                <div class="legend-item"><div class="color-box" style="background: #b87333;"></div> Copper Coil</div>
+                <div class="legend-item"><div class="color-box" style="background: #cccccc;"></div> Split-Ring Commutator</div>
                 <div class="legend-item"><div class="color-box" style="background: #eab308;"></div> Current Flow</div>
             </div>
         </div>
@@ -287,11 +283,11 @@
     // --- State Variables ---
     let isPlaying = true;
     let rotationSpeed = 0.05;
-    let direction = 1; // 1 for normal, -1 for reverse
+    let direction = 1; 
     let currentAngle = 0;
     const graphData = [];
     const MAX_GRAPH_POINTS = 300;
-    const MAX_EMF_DISPLAY = 1.2; // For graph scaling
+    const MAX_EMF_DISPLAY = 1.2; 
 
     // --- Three.js Setup ---
     const canvas = document.getElementById('canvas-3d');
@@ -299,24 +295,15 @@
     let renderer = null;
 
     try {
-        // Try to initialize with antialiasing and alpha channel
         renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true });
     } catch (e1) {
-        console.warn("Failed to create WebGL context with initial parameters. Trying fallback...", e1);
         try {
-            // Fallback: try basic WebGL setup
             renderer = new THREE.WebGLRenderer({ canvas });
         } catch (e2) {
-            // Complete failure
-            console.error("Total WebGL initialization failure:", e2);
             const inst = document.getElementById('instructions');
-            inst.innerHTML = "<span style='color: #ef4444; font-weight: bold; font-size: 14px;'>WebGL Error</span><br><br>Your browser or environment is blocking or does not support WebGL context creation.<br><br>The 3D simulation cannot be rendered. However, the EMF graph below will still function.";
+            inst.innerHTML = "<span style='color: #ef4444; font-weight: bold; font-size: 14px;'>WebGL Error</span><br><br>WebGL context creation failed. The 3D simulation cannot be rendered. However, the DC output graph below will still function.";
             inst.style.background = "rgba(15, 23, 42, 0.95)";
             inst.style.border = "1px solid #ef4444";
-            
-            // Note: We deliberately do NOT throw an error here anymore.
-            // By letting the script continue without a renderer, the 2D canvas graph
-            // and the UI controls will still work gracefully.
         }
     }
 
@@ -328,40 +315,33 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#0f172a');
 
-    // Camera setup
     const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.set(12, 8, 15);
+    camera.position.set(12, 10, 16);
 
     let controls = null;
     if (renderer) {
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.target.set(0, 0, 0);
+        controls.target.set(0, 0, 1.5);
     }
 
-    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
-    
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
     dirLight.position.set(10, 20, 10);
     scene.add(dirLight);
-
     const pointLight = new THREE.PointLight(0xffffff, 0.5);
     camera.add(pointLight);
     scene.add(camera);
 
     // --- Materials ---
     const matCopper = new THREE.MeshStandardMaterial({ color: 0xc87e4a, metalness: 0.8, roughness: 0.3 });
-    const matSilver = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.2 });
+    const matSilver = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.2, side: THREE.DoubleSide });
     const matCarbon = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 });
     const matWire = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
-    
-    // Glowing material for arrows
     const matCurrentActive = new THREE.MeshBasicMaterial({ color: 0xffdd00 });
 
-    // --- Helper function for text textures ---
     function createTextTexture(text, bgColor) {
         const ctxCanvas = document.createElement('canvas');
         ctxCanvas.width = 256; ctxCanvas.height = 256;
@@ -380,206 +360,166 @@
 
     // 1. Magnets
     const magnetGeo = new THREE.BoxGeometry(3, 5, 8);
-    
-    const matNorth = new THREE.MeshStandardMaterial({ 
-        color: 0xef4444, roughness: 0.6,
-        map: createTextTexture('N', '#ef4444') 
-    });
-    const magnetN = new THREE.Mesh(magnetGeo, matNorth);
+    const magnetN = new THREE.Mesh(magnetGeo, new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.6, map: createTextTexture('N', '#ef4444') }));
     magnetN.position.set(-6.5, 0, 0);
     scene.add(magnetN);
 
-    const matSouth = new THREE.MeshStandardMaterial({ 
-        color: 0x3b82f6, roughness: 0.6,
-        map: createTextTexture('S', '#3b82f6')
-    });
-    const magnetS = new THREE.Mesh(magnetGeo, matSouth);
+    const magnetS = new THREE.Mesh(magnetGeo, new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.6, map: createTextTexture('S', '#3b82f6') }));
     magnetS.position.set(6.5, 0, 0);
     scene.add(magnetS);
 
-    // Magnetic Field Lines (visual aid)
+    // Magnetic Field Lines
     const fieldLines = new THREE.Group();
     const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 });
     for(let z = -3; z <= 3; z+=1.5) {
         for(let y = -1.5; y <= 1.5; y+=1.5) {
-            const points = [];
-            points.push(new THREE.Vector3(-4.5, y, z));
-            points.push(new THREE.Vector3(4.5, y, z));
-            const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
-            fieldLines.add(new THREE.Line(lineGeo, lineMat));
+            const points = [new THREE.Vector3(-4.5, y, z), new THREE.Vector3(4.5, y, z)];
+            fieldLines.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), lineMat));
         }
     }
     scene.add(fieldLines);
 
-    // 2. Rotor Assembly (Coil, Slip Rings, Handle)
+    // 2. Rotor Assembly (Coil, Split Ring Commutator, Handle)
     const rotor = new THREE.Group();
     scene.add(rotor);
 
     // 2a. The Coil Frame
-    const coilWidth = 4; // Distance between side wires along X
-    const coilLength = 7; // Length of side wires along Z
+    const coilWidth = 4; 
+    const coilLength = 7; 
     const wireRad = 0.15;
     
-    // Right wire
-    const rightWireGeo = new THREE.CylinderGeometry(wireRad, wireRad, coilLength, 16);
-    const wireR = new THREE.Mesh(rightWireGeo, matCopper);
+    // Side wires
+    const wireGeo = new THREE.CylinderGeometry(wireRad, wireRad, coilLength, 16);
+    const wireR = new THREE.Mesh(wireGeo, matCopper);
     wireR.rotation.x = Math.PI / 2;
     wireR.position.set(coilWidth/2, 0, 0);
     rotor.add(wireR);
 
-    // Left wire
-    const wireL = new THREE.Mesh(rightWireGeo, matCopper);
+    const wireL = new THREE.Mesh(wireGeo, matCopper);
     wireL.rotation.x = Math.PI / 2;
     wireL.position.set(-coilWidth/2, 0, 0);
     rotor.add(wireL);
 
     // Back connector
-    const backConnGeo = new THREE.CylinderGeometry(wireRad, wireRad, coilWidth, 16);
-    const connB = new THREE.Mesh(backConnGeo, matCopper);
+    const connB = new THREE.Mesh(new THREE.CylinderGeometry(wireRad, wireRad, coilWidth, 16), matCopper);
     connB.rotation.z = Math.PI / 2;
     connB.position.set(0, 0, -coilLength/2);
     rotor.add(connB);
 
-    // Front connections to slip rings
+    // DC SPECIFIC: Front connections directly to Split Ring
     
-    // --- Left Wire to Inner Slip Ring (Ring 1) ---
-    // 1. Inward connector (Jog)
-    const connFLGeo = new THREE.CylinderGeometry(wireRad, wireRad, 1.35, 16);
+    // --- Left Wire (-X) to Left Commutator Half ---
+    const connFLGeo = new THREE.CylinderGeometry(wireRad, wireRad, 1.2, 16);
     const connFL = new THREE.Mesh(connFLGeo, matCopper);
     connFL.rotation.z = Math.PI / 2;
-    connFL.position.set(-1.325, 0, coilLength/2); 
+    connFL.position.set(-1.4, 0, 3.5); 
     rotor.add(connFL);
     
-    // 2. Axial wire to Ring 1
-    const axLGeo = new THREE.CylinderGeometry(wireRad, wireRad, 1.3, 16);
+    const axLGeo = new THREE.CylinderGeometry(wireRad, wireRad, 1.4, 16);
     const axL = new THREE.Mesh(axLGeo, matCopper);
     axL.rotation.x = Math.PI / 2;
-    axL.position.set(-0.65, 0, coilLength/2 + 0.65); 
+    axL.position.set(-0.8, 0, 4.2); // Aligns precisely with radius of split ring
     rotor.add(axL);
 
-    // --- Right Wire to Outer Slip Ring (Ring 2) ---
-    // 1. Inward connector (Jog)
-    const connFRGeo = new THREE.CylinderGeometry(wireRad, wireRad, 1.6, 16);
+    // --- Right Wire (+X) to Right Commutator Half ---
+    const connFRGeo = new THREE.CylinderGeometry(wireRad, wireRad, 1.2, 16);
     const connFR = new THREE.Mesh(connFRGeo, matCopper);
     connFR.rotation.z = Math.PI / 2;
-    connFR.position.set(1.2, 0, coilLength/2); 
+    connFR.position.set(1.4, 0, 3.5); 
     rotor.add(connFR);
     
-    // 2. Axial wire passing THROUGH Ring 1 to Ring 2
-    const axRCoreGeo = new THREE.CylinderGeometry(wireRad, wireRad, 2.8, 16);
-    const axRCore = new THREE.Mesh(axRCoreGeo, matCopper);
-    axRCore.rotation.x = Math.PI / 2;
-    axRCore.position.set(0.4, 0, coilLength/2 + 1.4); 
-    rotor.add(axRCore);
-    
-    // 3. Spoke connecting to Ring 2 inner surface
-    const spoke2Geo = new THREE.CylinderGeometry(wireRad, wireRad, 0.4, 16);
-    const spoke2 = new THREE.Mesh(spoke2Geo, matCopper);
-    spoke2.rotation.z = Math.PI / 2;
-    spoke2.position.set(0.6, 0, coilLength/2 + 2.5); 
-    rotor.add(spoke2);
+    const axRGeo = new THREE.CylinderGeometry(wireRad, wireRad, 1.4, 16);
+    const axR = new THREE.Mesh(axRGeo, matCopper);
+    axR.rotation.x = Math.PI / 2;
+    axR.position.set(0.8, 0, 4.2); // Aligns precisely with radius of split ring
+    rotor.add(axR);
 
-    // 2b. Slip Rings
-    const ringGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.6, 32, 1, true); // Open cylinder
-    
-    // Inner Ring (Ring 1) connected to Left Wire
-    const ring1 = new THREE.Mesh(ringGeo, matSilver);
-    ring1.material.side = THREE.DoubleSide;
-    ring1.rotation.x = Math.PI / 2;
-    ring1.position.set(0, 0, coilLength/2 + 1);
-    rotor.add(ring1);
+    // 2b. Split-Ring Commutator (Two half-cylinders)
+    const commRadius = 0.8;
+    const commLength = 0.8;
+    const commZ = 4.5;
+    const gap = 0.3; // Angular gap between halves
 
-    // Outer Ring (Ring 2) connected to Right Wire
-    const ring2 = new THREE.Mesh(ringGeo, matSilver);
-    ring2.material.side = THREE.DoubleSide;
-    ring2.rotation.x = Math.PI / 2;
-    ring2.position.set(0, 0, coilLength/2 + 2.5);
-    rotor.add(ring2);
+    // Right Half (+X)
+    const geoRight = new THREE.CylinderGeometry(commRadius, commRadius, commLength, 32, 1, true, gap/2, Math.PI - gap);
+    const halfRight = new THREE.Mesh(geoRight, matSilver);
+    halfRight.rotation.x = Math.PI / 2;
+    halfRight.position.set(0, 0, commZ);
+    rotor.add(halfRight); 
 
-    // 2c. Handle (Crank at the back)
+    // Left Half (-X)
+    const geoLeft = new THREE.CylinderGeometry(commRadius, commRadius, commLength, 32, 1, true, Math.PI + gap/2, Math.PI - gap);
+    const halfLeft = new THREE.Mesh(geoLeft, matSilver);
+    halfLeft.rotation.x = Math.PI / 2;
+    halfLeft.position.set(0, 0, commZ);
+    rotor.add(halfLeft); 
+
+    // 2c. Handle
     const handleGroup = new THREE.Group();
     handleGroup.position.set(0, 0, -coilLength/2 - 0.5);
-    
-    const shaftGeo = new THREE.CylinderGeometry(0.2, 0.2, 1.5, 16);
-    const shaft = new THREE.Mesh(shaftGeo, matSilver);
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.5, 16), matSilver);
     shaft.rotation.x = Math.PI / 2;
     handleGroup.add(shaft);
-
-    const crankArmGeo = new THREE.CylinderGeometry(0.2, 0.2, 2.5, 16);
-    const crankArm = new THREE.Mesh(crankArmGeo, matSilver);
+    const crankArm = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 2.5, 16), matSilver);
     crankArm.position.set(0, 1.25, -0.65);
     handleGroup.add(crankArm);
-
-    const gripGeo = new THREE.CylinderGeometry(0.3, 0.3, 2, 16);
-    const grip = new THREE.Mesh(gripGeo, new THREE.MeshStandardMaterial({color: 0x8b4513}));
+    const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 2, 16), new THREE.MeshStandardMaterial({color: 0x8b4513}));
     grip.rotation.x = Math.PI / 2;
     grip.position.set(0, 2.4, -1.65);
     handleGroup.add(grip);
-    
     rotor.add(handleGroup);
 
     // 3. Static Components (Brushes, Circuit, Lamp)
     
-    // Brushes
+    // Stationary Brushes rubbing against the Split Ring
     const brushGeo = new THREE.BoxGeometry(0.6, 0.6, 0.4);
     
+    // Left Brush
     const brush1 = new THREE.Mesh(brushGeo, matCarbon);
-    brush1.position.set(1.1, 0, coilLength/2 + 1); // Touching right side of Ring 1
+    brush1.position.set(-1.1, 0, commZ); 
     scene.add(brush1);
 
+    // Right Brush
     const brush2 = new THREE.Mesh(brushGeo, matCarbon);
-    brush2.position.set(1.1, 0, coilLength/2 + 2.5); // Touching right side of Ring 2
+    brush2.position.set(1.1, 0, commZ); 
     scene.add(brush2);
 
-    // External Circuit Layout (AC out) - Repositioned to form a clear rectangular loop
-    const circuitPoints = [];
-    circuitPoints.push(new THREE.Vector3(1.4, 0, coilLength/2 + 1));     // from Brush 1 (z=4.5)
-    circuitPoints.push(new THREE.Vector3(6.5, 0, coilLength/2 + 1));     // go wide right (x=6.5)
-    circuitPoints.push(new THREE.Vector3(6.5, 0, 7.5));                  // out to bulb line
-    circuitPoints.push(new THREE.Vector3(5.1, 0, 7.5));                  // to right side of Lamp
+    // External Circuit Layout (DC out) - Repositioned beside the brush
+    const circuitPointsL = [
+        new THREE.Vector3(-1.4, 0, commZ),
+        new THREE.Vector3(-2.5, 0, commZ),
+        new THREE.Vector3(-2.5, 0, 6.5),
+        new THREE.Vector3(3.1, 0, 6.5)
+    ];
     
-    const circuitPoints2 = [];
-    circuitPoints2.push(new THREE.Vector3(1.4, 0, coilLength/2 + 2.5));   // from Brush 2 (z=6.0)
-    circuitPoints2.push(new THREE.Vector3(2.0, 0, coilLength/2 + 2.5));   // go slightly right (x=2.0)
-    circuitPoints2.push(new THREE.Vector3(2.0, 0, 7.5));                  // out to bulb line
-    circuitPoints2.push(new THREE.Vector3(3.1, 0, 7.5));                  // to left side of Lamp
+    const circuitPointsR = [
+        new THREE.Vector3(1.4, 0, commZ),
+        new THREE.Vector3(5.5, 0, commZ),
+        new THREE.Vector3(5.5, 0, 6.5),
+        new THREE.Vector3(5.1, 0, 6.5)
+    ];
 
-    const path1 = new THREE.CatmullRomCurve3(circuitPoints, false, 'catmullrom', 0.1);
-    const path2 = new THREE.CatmullRomCurve3(circuitPoints2, false, 'catmullrom', 0.1);
-    
-    const tubeGeo1 = new THREE.TubeGeometry(path1, 20, 0.08, 8, false);
-    const tubeGeo2 = new THREE.TubeGeometry(path2, 20, 0.08, 8, false);
-    
-    scene.add(new THREE.Mesh(tubeGeo1, matWire));
-    scene.add(new THREE.Mesh(tubeGeo2, matWire));
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(circuitPointsL, false, 'catmullrom', 0.1), 20, 0.08, 8, false), matWire));
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(circuitPointsR, false, 'catmullrom', 0.1), 20, 0.08, 8, false), matWire));
 
-    // The Lamp (Bulb) - Repositioned beside the brushes
-    const lampPos = new THREE.Vector3(3.5, 0, 7.5);
-    
-    const baseGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.8, 16);
-    const lampBase = new THREE.Mesh(baseGeo, matSilver);
+    // The Lamp (Bulb) - Repositioned beside the brush
+    const lampPos = new THREE.Vector3(3.5, 0, 6.5);
+    const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.8, 16), matSilver);
     lampBase.rotation.z = Math.PI / 2;
     lampBase.position.copy(lampPos);
     scene.add(lampBase);
 
-    const bulbGeo = new THREE.SphereGeometry(0.8, 32, 32);
-    const bulbMat = new THREE.MeshStandardMaterial({ 
-        color: 0xffffff, transparent: true, opacity: 0.3, roughness: 0.1
-    });
-    const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.8, 32, 32), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, roughness: 0.1 }));
     // Shift bulb to align with the end of the base
     bulb.position.copy(lampPos).add(new THREE.Vector3(0.8, 0, 0));
     scene.add(bulb);
 
-    // Glowing filament inside bulb
-    const filamentGeo = new THREE.SphereGeometry(0.2, 16, 16);
     const filamentMat = new THREE.MeshBasicMaterial({ color: 0xff4400 });
-    const filament = new THREE.Mesh(filamentGeo, filamentMat);
+    const filament = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), filamentMat);
     filament.position.copy(bulb.position);
     scene.add(filament);
 
-    // Dynamic Light from bulb
-    const bulbLight = new THREE.PointLight(0xffaa00, 0, 10);
+    const bulbLight = new THREE.PointLight(0x10b981, 0, 10); // Greenish light to emphasize DC
     bulbLight.position.copy(bulb.position);
     scene.add(bulbLight);
 
@@ -587,10 +527,10 @@
     const arrows = [];
     const externalArrows = []; // For the stationary external circuit
     const arrowGeo = new THREE.ConeGeometry(0.3, 0.8, 16);
-    // Align cone to point along Z axis by default
     arrowGeo.translate(0, -0.4, 0); 
     arrowGeo.rotateX(Math.PI / 2);
 
+    // Creates arrows for the spinning coil
     function createArrow(x, y, z) {
         const arrow = new THREE.Mesh(arrowGeo, matCurrentActive);
         arrow.position.set(x, y, z);
@@ -608,18 +548,16 @@
         return arrow;
     }
 
-    // Arrows on Right wire (X positive)
+    // Internal Coil Arrows
     const arrowR1 = createArrow(coilWidth/2, 0, 1.5);
     const arrowR2 = createArrow(coilWidth/2, 0, -1.5);
-    
-    // Arrows on Left wire (X negative)
     const arrowL1 = createArrow(-coilWidth/2, 0, 1.5);
     const arrowL2 = createArrow(-coilWidth/2, 0, -1.5);
+    const arrowB = createArrow(0, 0, -coilLength/2); // Arrow for the back connector
 
-    // Arrows on the front straight wire leading into/out of the bulb
-    const extArrow1 = createExternalArrow(2.5, 0, 7.5); // Inside wire
-    const extArrow2 = createExternalArrow(5.8, 0, 7.5); // Outside wire
-
+    // NEW: Just 2 consistent arrows on the front straight wire leading into/out of the bulb
+    const extArrow1 = createExternalArrow(0.0, 0, 6.5);
+    const extArrow2 = createExternalArrow(5.0, 0, 6.5);
 
     // --- 2D Graph Setup ---
     const graphCtx = document.getElementById('emfGraph').getContext('2d');
@@ -633,41 +571,25 @@
         graphWidth = canvas.width;
         graphHeight = canvas.height;
         
-        // Pre-fill graph array
-        while(graphData.length < MAX_GRAPH_POINTS) {
-            graphData.push(0);
-        }
+        while(graphData.length < MAX_GRAPH_POINTS) graphData.push(0);
     }
     window.addEventListener('resize', resizeGraph);
-    resizeGraph(); // Initial sizing
+    resizeGraph();
 
 
     // --- Physics & Animation Logic ---
 
-    function calculateEMF() {
-        // Faraday's Law: EMF = N * B * A * w * sin(wt)
-        // Let's map coil position to flux.
-        // When angle = 0 (horizontal), normal is perpendicular to B-field. Flux = 0. Rate of change is max.
-        // Therefore, EMF ~ cos(angle)
+    function updateVisuals(rawCoilEmf, dcOutputEmf) {
+        // Fix: Incorporate mechanical direction to keep coil AC phase properly synced with the split-ring polarity!
+        const actualCoilEMF = rawCoilEmf * direction; 
+        const absEmf = Math.abs(actualCoilEMF);
         
-        // We use speed as omega (w) to scale amplitude, plus a base factor
-        const amplitude = (rotationSpeed / 0.05); 
-        const emf = Math.cos(currentAngle) * amplitude * direction;
-        return emf;
-    }
-
-    function updateVisuals(emf) {
-        const actualCoilEMF = emf * direction; // Incorporate mechanical direction to sync phases properly
-        const absEmf = Math.abs(emf);
+        // 1. Update Lamp Glow (Based on absolute DC output)
+        filamentMat.color.setHSL(0.12, 1, 0.2 + (Math.abs(dcOutputEmf) * 0.8)); 
+        bulbLight.intensity = Math.abs(dcOutputEmf) * 2;
         
-        // 1. Update Lamp Glow
-        filamentMat.color.setHSL(0.12, 1, 0.2 + (absEmf * 0.8)); // Glow brighter
-        bulbLight.intensity = absEmf * 2;
-        
-        // 2. Update Arrows (Current Direction)
-        const scaleFactor = Math.min(Math.max(absEmf * 2, 0.01), 2); // Prevent 0 scale errors, cap at 2
-        
-        // Visibility based on threshold
+        // 2. Update Arrows (Scale dynamically with EMF magnitude)
+        const scaleFactor = Math.min(Math.max(absEmf * 2, 0.01), 2); 
         const isCurrentFlowing = absEmf > 0.05;
         
         arrows.forEach(arrow => {
@@ -681,72 +603,69 @@
         });
 
         if (isCurrentFlowing) {
-            // Internal Coil AC Flow: Shows current on the long side-wires
+            // Internal Coil AC Flow: Forms a continuous loop inside the rotating wire
             if (actualCoilEMF > 0) {
                 arrowR1.rotation.y = Math.PI; // point -Z (Backwards)
                 arrowR2.rotation.y = Math.PI;
                 arrowL1.rotation.y = 0;       // point +Z (Forwards)
                 arrowL2.rotation.y = 0;
+                arrowB.rotation.y = -Math.PI / 2; // point -X (Left across the back)
             } else {
                 arrowR1.rotation.y = 0;       // point +Z (Forwards)
                 arrowR2.rotation.y = 0;
                 arrowL1.rotation.y = Math.PI; // point -Z (Backwards)
                 arrowL2.rotation.y = Math.PI;
+                arrowB.rotation.y = Math.PI / 2;  // point +X (Right across the back)
             }
 
-            // External Circuit AC Flow: Reverses direction continuously with the phase
-            if (actualCoilEMF > 0) {
-                // Flow is OUT of Brush 1 (Right side), returning to Brush 2 (Left side)
-                // Direction is Right-to-Left (-X direction)
-                extArrow1.rotation.y = -Math.PI / 2; 
-                extArrow2.rotation.y = -Math.PI / 2; 
+            // External DC Flow: Strictly flows one way on the bulb circuit
+            // FIXED: Math.PI / 2 correctly rotates the arrow to point Right (+X)
+            if (direction > 0) {
+                // Flow is left to right (+X direction)
+                extArrow1.rotation.y = Math.PI / 2; 
+                extArrow2.rotation.y = Math.PI / 2; 
             } else {
-                // Flow is OUT of Brush 2 (Left side), returning to Brush 1 (Right side)
-                // Direction is Left-to-Right (+X direction)
-                extArrow1.rotation.y = Math.PI / 2;  
-                extArrow2.rotation.y = Math.PI / 2;  
+                // Flow is right to left (-X direction)
+                extArrow1.rotation.y = -Math.PI / 2;  
+                extArrow2.rotation.y = -Math.PI / 2;  
             }
         }
     }
 
-    function drawGraph(emf) {
-        graphData.push(emf);
-        if (graphData.length > MAX_GRAPH_POINTS) {
-            graphData.shift();
-        }
+    function drawGraph(dcEmf) {
+        graphData.push(dcEmf);
+        if (graphData.length > MAX_GRAPH_POINTS) graphData.shift();
 
         graphCtx.clearRect(0, 0, graphWidth, graphHeight);
 
-        // Draw center zero-line
+        // Center line lowered for DC view
+        const baseY = graphHeight * 0.75; 
+
         graphCtx.beginPath();
         graphCtx.strokeStyle = 'rgba(255,255,255,0.2)';
         graphCtx.setLineDash([5, 5]);
-        graphCtx.moveTo(0, graphHeight / 2);
-        graphCtx.lineTo(graphWidth, graphHeight / 2);
+        graphCtx.moveTo(0, baseY);
+        graphCtx.lineTo(graphWidth, baseY);
         graphCtx.stroke();
         graphCtx.setLineDash([]);
 
-        // Draw EMF curve
         graphCtx.beginPath();
-        graphCtx.strokeStyle = '#3b82f6';
+        graphCtx.strokeStyle = '#10b981'; // Green wave for DC
         graphCtx.lineWidth = 2.5;
 
         for (let i = 0; i < graphData.length; i++) {
             const x = (i / (MAX_GRAPH_POINTS - 1)) * graphWidth;
-            // Map value to Y coordinate. Center is 0.
-            const normalizedY = graphData[i] / (MAX_EMF_DISPLAY * 2.5); // scaling factor for visuals
-            const y = (graphHeight / 2) - (normalizedY * graphHeight / 2);
+            // Scale and map to Y
+            const y = baseY - (graphData[i] / MAX_EMF_DISPLAY) * (graphHeight * 0.4);
 
             if (i === 0) graphCtx.moveTo(x, y);
             else graphCtx.lineTo(x, y);
         }
         graphCtx.stroke();
 
-        // Update Text readout
-        document.getElementById('emfReadout').innerText = `EMF: ${emf.toFixed(2)} V`;
+        document.getElementById('emfReadout').innerText = `DC Output: ${Math.abs(dcEmf).toFixed(2)} V`;
     }
 
-    // Main Animation Loop
     function animate() {
         requestAnimationFrame(animate);
 
@@ -755,16 +674,17 @@
             rotor.rotation.z = currentAngle;
         }
 
-        const currentEMF = calculateEMF();
+        // The raw alternating EMF induced in the coil
+        const rawCoilEMF = Math.cos(currentAngle) * (rotationSpeed / 0.05);
         
-        updateVisuals(currentEMF);
+        // The Split-Ring Commutator mechanically rectifies this into DC output.
+        // Reversing the physical rotation direction also reverses the polarity of the DC output.
+        const dcOutputEMF = Math.abs(rawCoilEMF) * direction;
         
-        // Update graph even if paused to keep rendering, but don't advance time if stopped
-        if (isPlaying) {
-             drawGraph(currentEMF);
-        }
+        updateVisuals(rawCoilEMF, dcOutputEMF);
+        
+        if (isPlaying) drawGraph(dcOutputEMF);
 
-        // Only update controls and render the 3D scene if WebGL initialization succeeded
         if (renderer) {
             if (controls) controls.update();
             renderer.render(scene, camera);
@@ -773,7 +693,6 @@
 
 
     // --- UI Interactions ---
-
     document.getElementById('btn-play').addEventListener('click', (e) => {
         isPlaying = !isPlaying;
         e.target.innerText = isPlaying ? "Pause Simulation" : "Play Simulation";
@@ -789,14 +708,12 @@
     
     speedSlider.addEventListener('input', (e) => {
         rotationSpeed = parseFloat(e.target.value);
-        // Calculate a nice display multiplier relative to default 0.05
         const multiplier = (rotationSpeed / 0.05).toFixed(1);
         speedValue.innerText = `${multiplier}x`;
     });
 
-    // Handle Window Resize for 3D Canvas
     window.addEventListener('resize', () => {
-        if (!renderer) return; // Guard if WebGL failed
+        if (!renderer) return; 
         const width = container.clientWidth;
         const height = container.clientHeight;
         renderer.setSize(width, height);
@@ -804,9 +721,7 @@
         camera.updateProjectionMatrix();
     });
 
-    // Start Simulation
     animate();
-
 </script>
 </body>
 </html>
