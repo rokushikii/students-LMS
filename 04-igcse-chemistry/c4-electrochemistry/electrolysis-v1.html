@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Electrolysis Cell Simulator - Pro</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a1a2e; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; display: block; cursor: grab; }
+        #canvas-container:active { cursor: grabbing; }
+        #ui-panel {
+            position: absolute; top: 20px; left: 20px; background: rgba(15, 52, 96, 0.9);
+            padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            width: 340px; z-index: 10;
+        }
+        h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid #e94560; padding-bottom: 10px; }
+        .control-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9rem; }
+        select, button, input[type="range"] { width: 100%; padding: 8px; border-radius: 4px; border: none; font-family: inherit; }
+        select { background: #fff; color: #1a1a2e; font-weight: bold; cursor: pointer; }
+        input[type="range"] { padding: 0; cursor: ew-resize; }
+        button { background: #e94560; color: #fff; margin-top: 10px; transition: 0.2s; font-weight: bold; cursor: pointer; }
+        button:hover { background: #ff2a4b; }
+        #equations { margin-top: 20px; font-family: monospace; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 4px; font-size: 0.85rem; }
+        .eq-title { color: #e94560; font-weight: bold; margin-bottom: 5px; }
+        .legend { margin-top: 15px; font-size: 0.8rem; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 4px; }
+        .color-box { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-panel">
+        <h2>Electrolysis Simulator</h2>
+        
+        <div class="control-group">
+            <label for="electrolyte">Electrolyte State</label>
+            <select id="electrolyte">
+                <option value="aq_cuso4">Aqueous CuSO4</option>
+                <option value="molten_nacl">Molten NaCl</option>
+                <option value="aq_nacl_conc">Concentrated Aqueous NaCl</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="electrodes">Electrodes</label>
+            <select id="electrodes">
+                <option value="active_cu">Active (Copper)</option>
+                <option value="inert">Inert (Carbon/Platinum)</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="sim-speed">Simulation Speed: <span id="speed-val">1.0</span>x</label>
+            <input type="range" id="sim-speed" min="0.1" max="4" step="0.1" value="1">
+        </div>
+
+        <button id="toggle-sim">Start Simulation</button>
+
+        <div id="equations">
+            <div class="eq-title">Anode (+) Reaction:</div>
+            <div id="anode-eq">Awaiting start...</div>
+            <br>
+            <div class="eq-title">Cathode (-) Reaction:</div>
+            <div id="cathode-eq">Awaiting start...</div>
+        </div>
+
+        <div class="legend" id="legend-box"></div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- 1. SCENE & CAMERA SETUP ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+        
+        // Initial Camera Position
+        camera.position.set(0, 5, 20);
+
+        // OrbitControls for Pan/Zoom/Rotate
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 2, 0);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 5);
+        scene.add(dirLight);
+
+        // --- 2. BUILD THE CELL & CIRCUIT ---
+        // Beaker & Liquid
+        const beaker = new THREE.Mesh(
+            new THREE.CylinderGeometry(3.2, 3.2, 7, 32, 1, true),
+            new THREE.MeshPhysicalMaterial({ color: 0x88ccff, transparent: true, opacity: 0.2, side: THREE.DoubleSide })
+        );
+        scene.add(beaker);
+
+        const liquidHeight = 6;
+        const liquidTopY = 2.5; // Top surface of the liquid
+        const liquid = new THREE.Mesh(
+            new THREE.CylinderGeometry(3.1, 3.1, liquidHeight, 32),
+            new THREE.MeshPhongMaterial({ color: 0x0055ff, transparent: true, opacity: 0.6 })
+        );
+        liquid.position.y = -0.5;
+        scene.add(liquid);
+
+        // Power Supply (Battery Box)
+        const psGeo = new THREE.BoxGeometry(3, 1.5, 1.5);
+        const psMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const powerSupply = new THREE.Mesh(psGeo, psMat);
+        powerSupply.position.set(0, 7.5, 0);
+        scene.add(powerSupply);
+
+        // Helper to draw + and - on battery terminals
+        function createTerminal(text, bgColor) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = bgColor; ctx.fillRect(0,0,128,128);
+            ctx.fillStyle = 'white'; ctx.font = 'bold 80px Arial';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(text, 64, 70);
+            const tex = new THREE.CanvasTexture(canvas);
+            return new THREE.MeshBasicMaterial({map: tex});
+        }
+
+        const posTerm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 1.6), createTerminal('+', '#cc0000'));
+        posTerm.position.set(-1.5, 7.5, 0);
+        scene.add(posTerm);
+
+        const negTerm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 1.6), createTerminal('-', '#0000cc'));
+        negTerm.position.set(1.5, 7.5, 0);
+        scene.add(negTerm);
+
+        // Wiring & Physical Switch
+        const wireMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+        
+        // Left Wire (Continuous)
+        const leftWire = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.5), wireMat);
+        leftWire.position.set(-1.5, 5.5, 0);
+        scene.add(leftWire);
+
+        // Right Wire (Broken for switch)
+        const rightWireTop = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.25), wireMat);
+        rightWireTop.position.set(1.5, 6.125, 0);
+        scene.add(rightWireTop);
+
+        const rightWireBot = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.75), wireMat);
+        rightWireBot.position.set(1.5, 4.625, 0);
+        scene.add(rightWireBot);
+
+        // Switch Arm
+        const switchArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.8), new THREE.MeshBasicMaterial({ color: 0xff3333 }));
+        switchArm.geometry.translate(0, -0.4, 0); // Move pivot point to top
+        switchArm.position.set(1.5, 5.5, 0);
+        switchArm.rotation.z = Math.PI / 4; // Starts Open
+        scene.add(switchArm);
+
+
+        // Split Electrodes (Top stays static, Bottom swells/dissolves)
+        const electrodeTopGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.5, 16); // Above liquid
+        const electrodeBotGeo = new THREE.CylinderGeometry(0.3, 0.3, 5.5, 16); // Submerged
+
+        // Anode (-) Left
+        const anodeTop = new THREE.Mesh(electrodeTopGeo, new THREE.MeshStandardMaterial({ color: 0xb87333 }));
+        anodeTop.position.set(-1.5, 3.5, 0);
+        scene.add(anodeTop);
+        
+        const anodeBot = new THREE.Mesh(electrodeBotGeo, new THREE.MeshStandardMaterial({ color: 0xb87333 }));
+        anodeBot.position.set(-1.5, 0, 0);
+        scene.add(anodeBot);
+
+        // Cathode (+) Right
+        const cathodeTop = new THREE.Mesh(electrodeTopGeo, new THREE.MeshStandardMaterial({ color: 0xb87333 }));
+        cathodeTop.position.set(1.5, 3.5, 0);
+        scene.add(cathodeTop);
+
+        const cathodeBot = new THREE.Mesh(electrodeBotGeo, new THREE.MeshStandardMaterial({ color: 0xb87333 }));
+        cathodeBot.position.set(1.5, 0, 0);
+        scene.add(cathodeBot);
+
+        // Plating Meshes (Attached strictly to bottom portions)
+        const platingGeo = new THREE.CylinderGeometry(0.32, 0.32, 5.5, 16);
+        
+        const anodePlating = new THREE.Mesh(platingGeo, new THREE.MeshStandardMaterial({ color: 0x222222, transparent: true, opacity: 0 }));
+        anodeBot.add(anodePlating);
+
+        const cathodePlating = new THREE.Mesh(platingGeo, new THREE.MeshStandardMaterial({ color: 0xb87333, transparent: true, opacity: 0 }));
+        cathodeBot.add(cathodePlating);
+
+
+        // --- 3. PARTICLE ENGINE ---
+        let isRunning = false;
+        let particles = [];
+        let bubbles = [];
+        let currentConfig = {};
+
+        const colors = {
+            cu: 0x3366ff, so4: 0xdddddd, na: 0xaaaaaa, cl: 0x33ff33,
+            h: 0xff3333, oh: 0xffa500, gasO2: 0xffffff, gasCl2: 0x88ff88,
+            gasH2: 0xeeeeee, plateCu: 0xb87333, plateNa: 0xe0e0e0
+        };
+
+        function createIon(isCation, colorHex) {
+            const mesh = new THREE.Mesh(
+                new THREE.SphereGeometry(0.12, 16, 16),
+                new THREE.MeshStandardMaterial({ color: colorHex })
+            );
+            resetParticlePosition(mesh);
+            scene.add(mesh);
+            particles.push({ mesh, isCation });
+        }
+
+        function createBubble(x, colorHex) {
+            const mesh = new THREE.Mesh(
+                new THREE.SphereGeometry(0.08, 12, 12),
+                new THREE.MeshStandardMaterial({ color: colorHex, transparent: true, opacity: 0.6 })
+            );
+            // Spawn precisely on the edge of the submerged electrode
+            const offset = (Math.random() > 0.5 ? 1 : -1) * (0.3 + Math.random()*0.1);
+            const zOffset = (Math.random() - 0.5) * 0.6;
+            const startY = -2.5 + Math.random() * 4; 
+            mesh.position.set(x + offset, startY, zOffset);
+            scene.add(mesh);
+            bubbles.push({ mesh, speed: 0.05 + Math.random() * 0.03 });
+        }
+
+        function resetParticlePosition(mesh) {
+            const r = Math.random() * 2.5;
+            const theta = Math.random() * Math.PI * 2;
+            mesh.position.set(r * Math.cos(theta), -2.5 + Math.random() * 4.5, r * Math.sin(theta));
+        }
+
+        function clearParticles() {
+            particles.forEach(p => scene.remove(p.mesh));
+            bubbles.forEach(b => scene.remove(b.mesh));
+            particles = []; bubbles = [];
+        }
+
+        // --- 4. LOGIC & STATE MANAGEMENT ---
+        const btnToggle = document.getElementById('toggle-sim');
+        const speedSlider = document.getElementById('sim-speed');
+        const speedVal = document.getElementById('speed-val');
+        
+        speedSlider.addEventListener('input', (e) => speedVal.innerText = e.target.value);
+
+        function resetElectrodes() {
+            anodeBot.scale.set(1, 1, 1);
+            cathodeBot.scale.set(1, 1, 1);
+            cathodePlating.scale.set(1, 1, 1);
+            cathodePlating.material.opacity = 0;
+            anodePlating.material.opacity = 0;
+            
+            const type = document.getElementById('electrodes').value;
+            const baseColor = type === 'active_cu' ? 0xb87333 : 0x222222;
+            
+            anodeTop.material.color.setHex(baseColor);
+            anodeBot.material.color.setHex(baseColor);
+            cathodeTop.material.color.setHex(baseColor);
+            cathodeBot.material.color.setHex(baseColor);
+        }
+
+        function setupSimulationState() {
+            clearParticles();
+            resetElectrodes();
+            
+            const elec = document.getElementById('electrolyte').value;
+            const type = document.getElementById('electrodes').value;
+            const legend = document.getElementById('legend-box');
+            
+            let anodeReaction = "";
+            let cathodeReaction = "";
+            let legendHTML = "";
+
+            currentConfig = { elec, type };
+
+            if (elec === 'molten_nacl') {
+                liquid.material.color.setHex(0xe8d0a9);
+                liquid.material.opacity = 0.8;
+                anodeReaction = "2Cl⁻ ➔ Cl₂ + 2e⁻ (Green gas)";
+                cathodeReaction = "Na⁺ + e⁻ ➔ Na (Silvery liquid layer)";
+                
+                for(let i=0; i<15; i++) { createIon(true, colors.na); createIon(false, colors.cl); }
+                legendHTML = `<div class="legend-item"><div class="color-box" style="background:#aaa;"></div> Na⁺ (Cation)</div>
+                              <div class="legend-item"><div class="color-box" style="background:#33ff33;"></div> Cl⁻ (Anion)</div>`;
+                cathodePlating.material.color.setHex(colors.plateNa);
+            } 
+            else if (elec === 'aq_cuso4') {
+                liquid.material.color.setHex(0x0055ff);
+                liquid.material.opacity = 0.6;
+                cathodeReaction = "Cu²⁺ + 2e⁻ ➔ Cu (Pink-brown solid)";
+                cathodePlating.material.color.setHex(colors.plateCu);
+
+                for(let i=0; i<15; i++) { createIon(true, colors.cu); createIon(false, colors.so4); }
+                legendHTML = `<div class="legend-item"><div class="color-box" style="background:#3366ff;"></div> Cu²⁺ (Cation)</div>
+                              <div class="legend-item"><div class="color-box" style="background:#ddd;"></div> SO₄²⁻ (Anion)</div>`;
+
+                if (type === 'inert') {
+                    anodeReaction = "4OH⁻ ➔ 2H₂O + O₂ + 4e⁻ (Colorless gas)";
+                    for(let i=0; i<5; i++) createIon(false, colors.oh); 
+                    legendHTML += `<div class="legend-item"><div class="color-box" style="background:#ffa500;"></div> OH⁻ (Anion)</div>`;
+                } else {
+                    anodeReaction = "Cu ➔ Cu²⁺ + 2e⁻ (Anode dissolves)";
+                }
+            }
+            else if (elec === 'aq_nacl_conc') {
+                liquid.material.color.setHex(0xaaaaaa);
+                liquid.material.opacity = 0.3;
+                cathodeReaction = "2H⁺ + 2e⁻ ➔ H₂ (Colorless gas)"; 
+                
+                for(let i=0; i<15; i++) { createIon(true, colors.na); createIon(false, colors.cl); createIon(true, colors.h); }
+                legendHTML = `<div class="legend-item"><div class="color-box" style="background:#ff3333;"></div> H⁺ (Discharged Cation)</div>
+                              <div class="legend-item"><div class="color-box" style="background:#aaa;"></div> Na⁺ (Spectator Cation)</div>
+                              <div class="legend-item"><div class="color-box" style="background:#33ff33;"></div> Cl⁻ (Discharged Anion)</div>`;
+
+                if (type === 'inert') {
+                    anodeReaction = "2Cl⁻ ➔ Cl₂ + 2e⁻ (Green gas)";
+                } else {
+                    anodeReaction = "Cu ➔ Cu²⁺ + 2e⁻ (Anode dissolves)";
+                }
+            }
+
+            document.getElementById('anode-eq').innerHTML = anodeReaction;
+            document.getElementById('cathode-eq').innerHTML = cathodeReaction;
+            legend.innerHTML = legendHTML;
+        }
+
+        btnToggle.addEventListener('click', () => {
+            isRunning = !isRunning;
+            btnToggle.innerText = isRunning ? "Stop Simulation" : "Start Simulation";
+            btnToggle.style.background = isRunning ? "#555" : "#e94560";
+            
+            // Snap the physical switch visually
+            switchArm.rotation.z = isRunning ? 0 : Math.PI / 4;
+
+            if (isRunning) setupSimulationState();
+        });
+
+        document.getElementById('electrolyte').addEventListener('change', () => { if(isRunning) setupSimulationState(); });
+        document.getElementById('electrodes').addEventListener('change', () => { if(isRunning) setupSimulationState(); });
+
+        // --- 5. ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); // Required for orbit damping
+            const speed = parseFloat(speedSlider.value);
+
+            if (isRunning) {
+                // Animate Ions
+                particles.forEach(p => {
+                    const targetX = p.isCation ? 1.5 : -1.5; 
+                    p.mesh.position.x += (targetX - p.mesh.position.x) * 0.02 * speed;
+                    
+                    // Hit detection
+                    if (Math.abs(p.mesh.position.x - targetX) < 0.35) {
+                        if (p.isCation) {
+                            if (currentConfig.elec === 'aq_cuso4' || currentConfig.elec === 'molten_nacl') {
+                                cathodePlating.material.opacity = 1;
+                                if (cathodePlating.scale.x < 1.6) cathodePlating.scale.set(cathodePlating.scale.x + 0.005, 1, cathodePlating.scale.z + 0.005);
+                            } else if (currentConfig.elec === 'aq_nacl_conc' && p.mesh.material.color.getHex() === colors.h) {
+                                if (Math.random() < 0.4) createBubble(1.5, colors.gasH2);
+                            }
+                        } 
+                        else {
+                            if (currentConfig.type === 'active_cu' && currentConfig.elec !== 'molten_nacl') {
+                                if (anodeBot.scale.x > 0.3) anodeBot.scale.set(anodeBot.scale.x - 0.005, 1, anodeBot.scale.z - 0.005);
+                            } else {
+                                if (currentConfig.elec === 'molten_nacl' || (currentConfig.elec === 'aq_nacl_conc' && currentConfig.type === 'inert')) {
+                                    if (p.mesh.material.color.getHex() === colors.cl && Math.random() < 0.4) createBubble(-1.5, colors.gasCl2);
+                                } else if (currentConfig.elec === 'aq_cuso4' && currentConfig.type === 'inert') {
+                                    if (Math.random() < 0.4) createBubble(-1.5, colors.gasO2);
+                                }
+                            }
+                        }
+                        // Reset ion back into the liquid immediately
+                        resetParticlePosition(p.mesh);
+                    }
+                });
+
+                // Animate Gas Bubbles Rising
+                for (let i = bubbles.length - 1; i >= 0; i--) {
+                    let b = bubbles[i];
+                    b.mesh.position.y += b.speed * speed;
+                    // Pop when it breaks the surface
+                    if (b.mesh.position.y > liquidTopY) {
+                        scene.remove(b.mesh);
+                        bubbles.splice(i, 1);
+                    }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        resetElectrodes();
+    </script>
+</body>
+</html>
