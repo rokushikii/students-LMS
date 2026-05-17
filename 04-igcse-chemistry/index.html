@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orient LMS | IGCSE Chemistry</title>
+    <style>
+        :root {
+            --primary-purple: #6b46c1;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --bg-light: #f8fafc;
+            --white: #ffffff;
+            --border-light: #e2e8f0;
+            --chemistry-accent: #10b981; /* Green for chemistry */
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light); color: var(--text-main);
+        }
+
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 40px; background-color: var(--white);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .logo { font-size: 22px; font-weight: bold; color: var(--primary-purple); text-decoration: none; }
+        .back-link { color: var(--text-muted); text-decoration: none; font-weight: 500; transition: 0.2s; }
+        .back-link:hover { color: var(--primary-purple); }
+
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        
+        .header { margin-bottom: 40px; border-bottom: 2px solid var(--border-light); padding-bottom: 20px; }
+        .header h1 { font-size: 36px; margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px; }
+        .header p { font-size: 18px; color: var(--text-muted); margin: 0; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
+
+        .card {
+            background: var(--white); border-radius: 12px; padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border-light);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex; flex-direction: column;
+        }
+
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+        
+        .card-tag { 
+            align-self: flex-start; background: #d1fae5; color: #059669;
+            padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 15px; 
+        }
+
+        .card h3 { margin: 0 0 10px 0; font-size: 20px; }
+        .card p { color: var(--text-muted); font-size: 14px; margin: 0 0 20px 0; line-height: 1.5; flex-grow: 1; }
+
+        .btn-launch {
+            background-color: var(--chemistry-accent); color: white; text-align: center;
+            padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; transition: 0.2s;
+        }
+        .btn-launch:hover { background-color: #059669; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="../index.html" class="logo">⚡ Orient LMS</a>
+        <a href="../index.html" class="back-link">← Back to Main Menu</a>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1>🧪 IGCSE Chemistry</h1>
+            <p>Interactive simulations and experiments.</p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <span class="card-tag">Ch 4: Electrochemistry</span>
+                <h3>Electrolysis Virtual Lab</h3>
+                <p>Observe the movement of ions to the cathode and anode during the electrolysis process.</p>
+                <a href="c4-electrochemistry/s1-simulation/electrolysis-v1.html" class="btn-launch">Launch Simulation</a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
