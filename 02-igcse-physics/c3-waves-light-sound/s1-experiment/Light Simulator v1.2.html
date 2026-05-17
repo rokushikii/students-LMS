@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced 3D Optical Bench Simulation v1.2</title>
+    <style>
+        :root {
+            --bg-color: #050b14;
+            --panel-bg: rgba(30, 41, 59, 0.95);
+            --panel-inner: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --laser: #ef4444;
+            --laser-off: #475569;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color); color: var(--text-main);
+        }
+
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        /* Hamburger Menu Button */
+        #hamburger-btn {
+            position: absolute; top: 20px; right: 20px; z-index: 100;
+            background-color: var(--panel-bg); color: white; border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 18px;
+            display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3); backdrop-filter: blur(8px);
+        }
+
+        #ui-panel {
+            position: absolute; top: 20px; right: 20px; width: 340px;
+            background-color: var(--panel-bg); backdrop-filter: blur(8px);
+            padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            max-height: 90vh; overflow-y: auto; z-index: 50; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        h2 { margin: 0; font-size: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
+        
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        
+        button {
+            flex: 1; min-width: 45%; background-color: var(--accent); color: white;
+            border: none; padding: 10px; border-radius: 6px; font-weight: 600;
+            cursor: pointer; transition: 0.2s;
+        }
+        button:hover { background-color: var(--accent-hover); }
+        button:disabled { background-color: #475569; cursor: not-allowed; opacity: 0.7; }
+        
+        .laser-btn { background-color: var(--laser); }
+        .laser-btn.off { background-color: var(--laser-off); }
+
+        .card { background-color: var(--panel-inner); padding: 12px; border-radius: 8px; }
+        .card h3 { margin: 0 0 10px 0; font-size: 14px; color: var(--text-muted); }
+
+        .slider-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        .slider-row label { font-size: 13px; display: flex; justify-content: space-between; }
+        input[type=range] { width: 100%; cursor: pointer; }
+
+        #data-readout { font-family: monospace; font-size: 13px; color: #a7f3d0; line-height: 1.5; min-height: 80px;}
+
+        #instructions {
+            position: absolute; bottom: 20px; left: 20px; background: rgba(15,23,42,0.8);
+            padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+            pointer-events: none; max-width: 280px; font-size: 13px; line-height: 1.4;
+        }
+
+        /* Responsive Design for Small Screens */
+        @media (max-width: 768px) {
+            #hamburger-btn { display: block; }
+            #ui-panel { transform: translateX(120%); top: 70px; right: 10px; width: 300px; }
+            #ui-panel.open { transform: translateX(0); }
+            #instructions { top: 20px; bottom: auto; }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<button id="hamburger-btn">☰ Menu</button>
+
+<div id="instructions">
+    <strong>Controls:</strong><br>
+    • Drag apparatus to move them.<br>
+    • Select an apparatus to rotate it or change its Refractive Index.<br>
+    • Light physics updates in real-time.
+</div>
+
+<div id="ui-panel">
+    <h2>Optical Bench <button id="close-panel-btn" style="flex: 0; background: none; color: white; padding: 0; width: auto; font-size: 20px;" class="mobile-only">×</button></h2>
+    
+    <div class="btn-group">
+        <button id="btn-laser" class="laser-btn">Laser: ON</button>
+        <button id="btn-multi" class="laser-btn off">Mode: Single Ray</button>
+    </div>
+    
+    <div class="btn-group">
+        <button id="btn-3d">3D View</button>
+        <button id="btn-plan">Plan View</button>
+    </div>
+
+    <div class="card">
+        <h3>Add Apparatus (Max 3)</h3>
+        <div class="btn-group">
+            <button id="btn-add-mirror">+ Mirror</button>
+            <button id="btn-add-glass">+ Glass Block</button>
+            <button id="btn-clear" style="background: #ef4444; flex-basis: 100%;">Clear Bench</button>
+        </div>
+    </div>
+
+    <div class="card" id="properties-card" style="opacity: 0.5; pointer-events: none;">
+        <h3 id="selected-title">Properties: None Selected</h3>
+        <div class="slider-row">
+            <label>Rotation <span id="val-rot">0°</span></label>
+            <input type="range" id="slider-rot" min="-90" max="90" value="0">
+        </div>
+        <div class="slider-row" id="ri-container" style="display: none;">
+            <label>Refractive Index (n) <span id="val-ri">1.50</span></label>
+            <input type="range" id="slider-ri" min="1.3" max="1.8" step="0.01" value="1.5">
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Live Calculations (Center Ray)</h3>
+        <div id="data-readout">Waiting for intersection...</div>
+    </div>
+</div>
+
+<script>
+    // --- State & Variables ---
+    let isLaserOn = true;
+    let isMultiRay = false;
+    let isPlanView = false;
+    let apparatusList = [];
+    let selectedApparatus = null;
+    let dragTarget = null;
+    
+    const MAX_ITEMS = 3;
+    const TRACK_LENGTH = 160;
+
+    // --- Scene Setup ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#050b14');
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(20, 50, 20);
+    scene.add(dirLight);
+
+    // --- Static Objects ---
+    const trackGeo = new THREE.BoxGeometry(16, 2, TRACK_LENGTH);
+    const trackMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+    const track = new THREE.Mesh(trackGeo, trackMat);
+    track.position.y = -1;
+    scene.add(track);
+
+    const gridHelper = new THREE.GridHelper(TRACK_LENGTH, 32, 0x334155, 0x0f172a);
+    gridHelper.position.y = 0.01;
+    gridHelper.scale.z = 1;
+    gridHelper.scale.x = 0.3;
+    scene.add(gridHelper);
+
+    const laserBox = new THREE.Mesh(
+        new THREE.BoxGeometry(8, 6, 12),
+        new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.8 })
+    );
+    laserBox.position.set(0, 3, -TRACK_LENGTH/2 - 6);
+    scene.add(laserBox);
+
+    const dragPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(500, 500),
+        new THREE.MeshBasicMaterial({ visible: false })
+    );
+    dragPlane.rotation.x = -Math.PI / 2;
+    dragPlane.position.y = 3;
+    scene.add(dragPlane);
+
+    // Dynamic ray groups
+    const rayGroup = new THREE.Group();
+    scene.add(rayGroup);
+    const normalGroup = new THREE.Group();
+    scene.add(normalGroup);
+
+    // --- Materials for Apparatus ---
+    // FIXED: Changed to Phong Material so the silver color shows up without needing an environment reflection map
+    const matMirror = new THREE.MeshPhongMaterial({ color: 0xcccccc, specular: 0xffffff, shininess: 100 });
+    
+    // Glass material
+    const matGlass = new THREE.MeshPhysicalMaterial({ color: 0xcffafe, transmission: 0.95, opacity: 1, transparent: true, roughness: 0.02, ior: 1.5 });
+    
+    const highlightOutline = new THREE.LineBasicMaterial({ color: 0x3b82f6, linewidth: 3 });
+
+    // --- Helper Functions ---
+    function setCameraView(view) {
+        isPlanView = (view === 'plan');
+        if (isPlanView) {
+            const targetZ = selectedApparatus ? selectedApparatus.position.z : 0;
+            camera.position.set(0, 100, targetZ);
+            controls.target.set(0, 0, targetZ);
+            controls.enableRotate = false;
+        } else {
+            camera.position.set(50, 40, -60);
+            controls.target.set(0, 0, 0);
+            controls.enableRotate = true;
+        }
+    }
+
+    // Creates a visible 3D cylinder instead of a 1px line
+    function createThickLine(start, end, colorHex, radius = 0.25) {
+        let distance = start.distanceTo(end);
+        if (distance < 0.01) distance = 0.01;
+        const geo = new THREE.CylinderGeometry(radius, radius, distance, 8);
+        geo.translate(0, distance / 2, 0); // Pivot at start
+        geo.rotateX(Math.PI / 2); // Align with Z axis by default
+        
+        const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+        const mesh = new THREE.Mesh(geo, mat);
+        
+        mesh.position.copy(start);
+        mesh.lookAt(end);
+        return mesh;
+    }
+
+    function refractVector(incident, normal, ratio) {
+        const cosI = -incident.dot(normal);
+        const sinT2 = ratio * ratio * (1.0 - cosI * cosI);
+        if (sinT2 > 1.0) return null; // TIR occurred
+        const cosT = Math.sqrt(1.0 - sinT2);
+        return incident.clone().multiplyScalar(ratio).add(normal.clone().multiplyScalar(ratio * cosI - cosT)).normalize();
+    }
+
+    // --- Core Physics Engine ---
+    const raycaster = new THREE.Raycaster();
+
+    function traceRays() {
+        // Clear previous frame's rays
+        while(rayGroup.children.length > 0) rayGroup.remove(rayGroup.children[0]);
+        while(normalGroup.children.length > 0) normalGroup.remove(normalGroup.children[0]);
+        
+        let centerReadoutHtml = "No intersections.";
+        
+        if (!isLaserOn) {
+            document.getElementById('data-readout').innerHTML = "Laser is OFF";
+            return;
+        }
+
+        // Force matrices to update so rotations are instantly caught by the math engine
+        apparatusList.forEach(obj => obj.updateMatrixWorld());
+
+        const offsets = isMultiRay ? [-3, 0, 3] : [0];
+
+        offsets.forEach((offsetX) => {
+            const isCenterRay = (offsetX === 0);
+            let hitText = [];
+            
+            let currentOrigin = new THREE.Vector3(offsetX, 4, -TRACK_LENGTH/2 - 5);
+            let currentDir = new THREE.Vector3(0, 0, 1).normalize();
+            let bounces = 0;
+            let insideObject = null;
+
+            while (bounces < 15) { // Max 15 bounces prevents infinite loops in TIR traps
+                raycaster.set(currentOrigin, currentDir);
+
+                if (insideObject) {
+                    // Ray is INSIDE a glass block. It must hit the boundary from the inside.
+                    insideObject.material.side = THREE.BackSide; 
+                    const intersects = raycaster.intersectObject(insideObject);
+                    insideObject.material.side = THREE.FrontSide; // Restore immediately
+
+                    if (intersects.length > 0) {
+                        const hit = intersects[0];
+                        
+                        // FIXED: Transform the local normal vector into world space so rotation works!
+                        const outwardNormal = hit.face.normal.clone().transformDirection(insideObject.matrixWorld).normalize();
+                        
+                        // inwardNormal points back INTO the glass (opposing the ray)
+                        const inwardNormal = outwardNormal.clone().negate();
+
+                        const n1 = insideObject.userData.n;
+                        const n2 = 1.0; // air
+                        const ratio = n1 / n2;
+                        
+                        // Incidence angle is between the ray direction and the inward normal
+                        const angleIncidence = currentDir.clone().negate().angleTo(inwardNormal);
+                        const criticalAngle = Math.asin(n2 / n1);
+                        
+                        // Check for Total Internal Reflection
+                        if (angleIncidence >= criticalAngle) {
+                            // TIR happens
+                            const reflectDir = currentDir.clone().reflect(inwardNormal).normalize();
+                            
+                            if (isCenterRay) {
+                                hitText.push(`<span style="color:#ef4444;">Total Internal Reflection</span><br>Critical Angle (\u03B8c): ${THREE.MathUtils.radToDeg(criticalAngle).toFixed(1)}°<br>Incidence (i): ${THREE.MathUtils.radToDeg(angleIncidence).toFixed(1)}° &ge; \u03B8c`);
+                                // Draw Normal Line
+                                normalGroup.add(createThickLine(hit.point, hit.point.clone().add(outwardNormal.clone().multiplyScalar(5)), 0x10b981, 0.1));
+                                normalGroup.add(createThickLine(hit.point, hit.point.clone().add(inwardNormal.clone().multiplyScalar(5)), 0x10b981, 0.1));
+                            }
+                            
+                            // Draw internal bouncing ray (slightly dimmer red)
+                            rayGroup.add(createThickLine(currentOrigin, hit.point, 0xfca5a5));
+                            
+                            currentOrigin = hit.point.clone().add(reflectDir.clone().multiplyScalar(0.01));
+                            currentDir = reflectDir;
+                        } else {
+                            // Escapes the block (Refraction)
+                            const exitDir = refractVector(currentDir, inwardNormal, ratio);
+                            
+                            if (isCenterRay) {
+                                const angleRefracted = exitDir.clone().negate().angleTo(outwardNormal);
+                                hitText.push(`<b>Exit Boundary</b><br>Incidence (i): ${THREE.MathUtils.radToDeg(angleIncidence).toFixed(1)}°<br>Exit Angle (r): ${THREE.MathUtils.radToDeg(angleRefracted).toFixed(1)}°`);
+                                normalGroup.add(createThickLine(hit.point, hit.point.clone().add(outwardNormal.clone().multiplyScalar(5)), 0x10b981, 0.1));
+                            }
+
+                            rayGroup.add(createThickLine(currentOrigin, hit.point, 0xfca5a5));
+                            currentOrigin = hit.point.clone().add(exitDir.clone().multiplyScalar(0.01));
+                            currentDir = exitDir;
+                            insideObject = null; // Ray has left the building
+                        }
+                    } else {
+                        break;
+                    }
+
+                } else {
+                    // Ray is OUTSIDE in the air.
+                    const intersects = raycaster.intersectObjects(apparatusList);
+
+                    if (intersects.length > 0) {
+                        const hit = intersects[0];
+                        const obj = hit.object;
+                        
+                        // FIXED: Transform the local face normal vector into true world space rotation.
+                        const normal = hit.face.normal.clone().transformDirection(obj.matrixWorld).normalize();
+                        
+                        // Draw ray to the object
+                        rayGroup.add(createThickLine(currentOrigin, hit.point, 0xef4444));
+
+                        if (isCenterRay) {
+                            normalGroup.add(createThickLine(hit.point, hit.point.clone().add(normal.clone().multiplyScalar(8)), 0x10b981, 0.1));
+                        }
+
+                        const angleIncidence = currentDir.clone().negate().angleTo(normal);
+                        const degI = THREE.MathUtils.radToDeg(angleIncidence).toFixed(1);
+
+                        if (obj.userData.type === 'mirror') {
+                            // Simple Reflection
+                            const reflectDir = currentDir.clone().reflect(normal).normalize();
+                            if (isCenterRay) hitText.push(`<b>Mirror Hit</b><br>Angle of Incidence (i): ${degI}°<br>Angle of Reflection (r): ${degI}°`);
+                            
+                            currentOrigin = hit.point.clone().add(reflectDir.clone().multiplyScalar(0.01));
+                            currentDir = reflectDir;
+                        } 
+                        else if (obj.userData.type === 'glass') {
+                            // Entering Glass Block
+                            const n1 = 1.0;
+                            const n2 = obj.userData.n;
+                            const ratio = n1 / n2;
+                            const critical = Math.asin(1/n2);
+                            
+                            const enterDir = refractVector(currentDir, normal, ratio);
+                            
+                            if (isCenterRay) {
+                                const degR = THREE.MathUtils.radToDeg(enterDir.clone().negate().angleTo(normal.clone().negate())).toFixed(1);
+                                hitText.push(`<b>Enter Glass Block</b><br>n = ${n2.toFixed(2)} | \u03B8c = ${THREE.MathUtils.radToDeg(critical).toFixed(1)}°<br>Incidence (i): ${degI}°<br>Refracted (r): ${degR}°`);
+                            }
+
+                            currentOrigin = hit.point.clone().add(enterDir.clone().multiplyScalar(0.01));
+                            currentDir = enterDir;
+                            insideObject = obj; // Track that we are now inside
+                        }
+                    } else {
+                        // Hits nothing, flies off into space
+                        rayGroup.add(createThickLine(currentOrigin, currentOrigin.clone().add(currentDir.multiplyScalar(300)), 0xef4444));
+                        break;
+                    }
+                }
+                bounces++;
+            }
+
+            if (isCenterRay && hitText.length > 0) {
+                centerReadoutHtml = hitText.join('<br><br>');
+            }
+        });
+
+        document.getElementById('data-readout').innerHTML = centerReadoutHtml;
+    }
+
+
+    // --- UI and Interactions ---
+    function updateUI() {
+        document.getElementById('btn-add-mirror').disabled = apparatusList.length >= MAX_ITEMS;
+        document.getElementById('btn-add-glass').disabled = apparatusList.length >= MAX_ITEMS;
+
+        const propCard = document.getElementById('properties-card');
+        if (selectedApparatus) {
+            propCard.style.opacity = 1;
+            propCard.style.pointerEvents = 'auto';
+            document.getElementById('selected-title').innerText = `Properties: ${selectedApparatus.userData.type === 'mirror' ? 'Mirror' : 'Glass Block'}`;
+            document.getElementById('slider-rot').value = THREE.MathUtils.radToDeg(selectedApparatus.rotation.y);
+            document.getElementById('val-rot').innerText = `${Math.round(THREE.MathUtils.radToDeg(selectedApparatus.rotation.y))}°`;
+            
+            if (selectedApparatus.userData.type === 'glass') {
+                document.getElementById('ri-container').style.display = 'flex';
+                document.getElementById('slider-ri').value = selectedApparatus.userData.n;
+                document.getElementById('val-ri').innerText = selectedApparatus.userData.n.toFixed(2);
+            } else {
+                document.getElementById('ri-container').style.display = 'none';
+            }
+        } else {
+            propCard.style.opacity = 0.5;
+            propCard.style.pointerEvents = 'none';
+            document.getElementById('selected-title').innerText = 'Properties: None Selected';
+        }
+
+        apparatusList.forEach(app => {
+            if (app.userData.outline) app.remove(app.userData.outline);
+            if (app === selectedApparatus) {
+                const edges = new THREE.EdgesGeometry(app.geometry);
+                const line = new THREE.LineSegments(edges, highlightOutline);
+                app.userData.outline = line;
+                app.add(line);
+            }
+        });
+    }
+
+    function addApparatus(type) {
+        if (apparatusList.length >= MAX_ITEMS) return;
+        let mesh;
+        if (type === 'mirror') {
+            mesh = new THREE.Mesh(new THREE.BoxGeometry(16, 8, 1), matMirror);
+            mesh.userData = { type: 'mirror', n: 1.0 };
+        } else {
+            mesh = new THREE.Mesh(new THREE.BoxGeometry(16, 8, 8), matGlass.clone());
+            mesh.userData = { type: 'glass', n: 1.5 };
+        }
+        mesh.position.set(0, 4, -20 + (apparatusList.length * 30));
+        scene.add(mesh);
+        apparatusList.push(mesh);
+        
+        selectedApparatus = mesh;
+        if (isPlanView) setCameraView('plan');
+        updateUI();
+    }
+
+    const mouse = new THREE.Vector2();
+    let isDragging = false;
+
+    window.addEventListener('pointerdown', (e) => {
+        if (e.target !== renderer.domElement) return;
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(apparatusList);
+
+        if (intersects.length > 0) {
+            controls.enabled = false;
+            isDragging = true;
+            dragTarget = intersects[0].object;
+            selectedApparatus = dragTarget;
+            if (isPlanView) setCameraView('plan');
+            updateUI();
+        } else {
+            selectedApparatus = null;
+            updateUI();
+        }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+        if (!isDragging || !dragTarget) return;
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObject(dragPlane);
+
+        if (intersects.length > 0) {
+            let newX = Math.max(-20, Math.min(20, intersects[0].point.x));
+            let newZ = Math.max(-TRACK_LENGTH/2 + 5, Math.min(TRACK_LENGTH/2, intersects[0].point.z));
+            dragTarget.position.set(newX, dragTarget.position.y, newZ);
+            if (isPlanView) {
+                camera.position.z = newZ;
+                controls.target.z = newZ;
+            }
+        }
+    });
+
+    window.addEventListener('pointerup', () => {
+        isDragging = false;
+        dragTarget = null;
+        controls.enabled = !isPlanView;
+    });
+
+    // UI Buttons
+    document.getElementById('btn-add-mirror').addEventListener('click', () => addApparatus('mirror'));
+    document.getElementById('btn-add-glass').addEventListener('click', () => addApparatus('glass'));
+    document.getElementById('btn-clear').addEventListener('click', () => {
+        apparatusList.forEach(app => scene.remove(app));
+        apparatusList = [];
+        selectedApparatus = null;
+        updateUI();
+    });
+
+    document.getElementById('btn-laser').addEventListener('click', (e) => {
+        isLaserOn = !isLaserOn;
+        e.target.innerText = isLaserOn ? "Laser: ON" : "Laser: OFF";
+        e.target.className = isLaserOn ? "laser-btn" : "laser-btn off";
+    });
+
+    document.getElementById('btn-multi').addEventListener('click', (e) => {
+        isMultiRay = !isMultiRay;
+        e.target.innerText = isMultiRay ? "Mode: 3 Rays" : "Mode: Single Ray";
+        e.target.className = isMultiRay ? "laser-btn" : "laser-btn off";
+    });
+
+    document.getElementById('btn-3d').addEventListener('click', () => setCameraView('3d'));
+    document.getElementById('btn-plan').addEventListener('click', () => setCameraView('plan'));
+
+    document.getElementById('slider-rot').addEventListener('input', (e) => {
+        if (selectedApparatus) {
+            selectedApparatus.rotation.y = THREE.MathUtils.degToRad(e.target.value);
+            document.getElementById('val-rot').innerText = `${e.target.value}°`;
+        }
+    });
+
+    document.getElementById('slider-ri').addEventListener('input', (e) => {
+        if (selectedApparatus && selectedApparatus.userData.type === 'glass') {
+            selectedApparatus.userData.n = parseFloat(e.target.value);
+            selectedApparatus.material.ior = selectedApparatus.userData.n;
+            document.getElementById('val-ri').innerText = selectedApparatus.userData.n.toFixed(2);
+        }
+    });
+
+    // Mobile Hamburger Menu
+    const uiPanel = document.getElementById('ui-panel');
+    document.getElementById('hamburger-btn').addEventListener('click', () => {
+        uiPanel.classList.toggle('open');
+    });
+    document.getElementById('close-panel-btn').addEventListener('click', () => {
+        uiPanel.classList.remove('open');
+    });
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- Animation Loop ---
+    setCameraView('3d');
+
+    function animate() {
+        requestAnimationFrame(animate);
+        traceRays(); // Continuous real-time physics check
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    
+    animate();
+</script>
+</body>
+</html>
