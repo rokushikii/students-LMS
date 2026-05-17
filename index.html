@@ -91,7 +91,7 @@
             padding: 12px 20px;
             text-decoration: none;
             display: flex;
-            justify-content: space-between; /* Pushes the arrow to the right */
+            justify-content: space-between;
             align-items: center;
             transition: background 0.2s;
         }
@@ -109,7 +109,7 @@
         .sub-dropdown-content {
             display: none;
             position: absolute;
-            left: 100%; /* Positions it directly to the right of the parent */
+            left: 100%; 
             top: 0;
             background-color: var(--white);
             min-width: 260px;
@@ -119,7 +119,6 @@
             padding: 10px 0;
         }
 
-        /* Adding a tiny invisible buffer so the mouse doesn't fall off when moving right */
         .sub-dropdown-content::before {
             content: "";
             position: absolute;
@@ -142,7 +141,6 @@
             background-color: transparent !important;
             color: var(--text-muted) !important;
         }
-
 
         /* --- Right Side Nav & Buttons --- */
         .nav-right {
@@ -233,7 +231,7 @@
 
     <nav class="navbar">
         <div class="nav-left">
-            <a href="#" class="logo">⚡ Orient LMS</a>
+            <a href="index.html" class="logo">⚡ Orient LMS</a>
             
             <div class="dropdown">
                 <button class="dropbtn">Resources ⌄</button>
@@ -254,18 +252,28 @@
                     </div>
 
                     <div class="sub-dropdown">
-    <a href="02-igcse-physics/index.html">IGCSE Physics <span>⏵</span></a>
-    <div class="sub-dropdown-content">
-        <a href="02-igcse-physics/c1-general-physics/index.html">1. General Physics</a>
-        </div>
-</div>
+                        <a href="02-igcse-physics/index.html">IGCSE Physics <span>⏵</span></a>
+                        <div class="sub-dropdown-content">
+                            <a href="02-igcse-physics/c1-general-physics/index.html">1. General Physics</a>
+                            <a href="02-igcse-physics/c2-thermal-physics/index.html">2. Thermal Physics</a>
+                            <a href="02-igcse-physics/c3-waves-light-sound/index.html">3. Waves, Light & Sound</a>
+                            <a href="02-igcse-physics/c4-electricity-magnetism/index.html">4. Electricity & Magnetism</a>
+                            <a href="02-igcse-physics/c5-nuclear-physics/index.html">5. Nuclear Physics</a>
+                            <a href="02-igcse-physics/c6-space-physics/index.html">6. Space Physics</a>
+                        </div>
+                    </div>
 
                     <div class="sub-dropdown">
-    <a href="02-igcse-physics/index.html">IGCSE Physics <span>⏵</span></a>
-    <div class="sub-dropdown-content">
-        <a href="02-igcse-physics/c1-general-physics/index.html">1. General Physics</a>
-        </div>
-</div>
+                        <a href="04-igcse-chemistry/index.html">IGCSE Chemistry <span>⏵</span></a>
+                        <div class="sub-dropdown-content">
+                            <a href="04-igcse-chemistry/c1-exp-technique-and-separation/index.html">1. Exp. Technique & Separation</a>
+                            <a href="04-igcse-chemistry/c2-acid-bases-salt/index.html">2. Acids, Bases & Salts</a>
+                            <a href="04-igcse-chemistry/c3-rate-of-reaction/index.html">3. Rate of Reaction</a>
+                            <a href="04-igcse-chemistry/c4-electrochemistry/index.html">4. Electrochemistry</a>
+                            <a href="04-igcse-chemistry/c5-chemical-energetics/index.html">5. Chemical Energetics</a>
+                            <a href="04-igcse-chemistry/c6-organic-chemistry/index.html">6. Organic Chemistry</a>
+                        </div>
+                    </div>
 
                 </div>
             </div>
