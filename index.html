@@ -48,7 +48,7 @@
             text-decoration: none;
         }
 
-        /* Dropdown Menu Setup */
+        /* --- Nested Dropdown Menu Setup --- */
         .dropdown {
             position: relative;
             display: inline-block;
@@ -67,11 +67,12 @@
             gap: 5px;
         }
 
+        /* First Level Dropdown (Subjects) */
         .dropdown-content {
             display: none;
             position: absolute;
             background-color: var(--white);
-            min-width: 250px;
+            min-width: 220px;
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
             border-radius: 8px;
             border: 1px solid var(--border-light);
@@ -82,14 +83,16 @@
         }
 
         .dropdown:hover .dropdown-content {
-            display: block; /* Shows the menu when hovered */
+            display: block;
         }
 
         .dropdown-content a {
             color: var(--text-main);
             padding: 12px 20px;
             text-decoration: none;
-            display: block;
+            display: flex;
+            justify-content: space-between; /* Pushes the arrow to the right */
+            align-items: center;
             transition: background 0.2s;
         }
 
@@ -97,6 +100,49 @@
             background-color: var(--bg-light);
             color: var(--primary-purple);
         }
+
+        /* Second Level Dropdown (Chapters) */
+        .sub-dropdown {
+            position: relative;
+        }
+
+        .sub-dropdown-content {
+            display: none;
+            position: absolute;
+            left: 100%; /* Positions it directly to the right of the parent */
+            top: 0;
+            background-color: var(--white);
+            min-width: 260px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            border: 1px solid var(--border-light);
+            padding: 10px 0;
+        }
+
+        /* Adding a tiny invisible buffer so the mouse doesn't fall off when moving right */
+        .sub-dropdown-content::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -10px;
+            width: 10px;
+            height: 100%;
+        }
+
+        .sub-dropdown:hover .sub-dropdown-content {
+            display: block;
+        }
+
+        .empty-notice {
+            color: var(--text-muted) !important;
+            font-style: italic;
+            cursor: default;
+        }
+        .empty-notice:hover {
+            background-color: transparent !important;
+            color: var(--text-muted) !important;
+        }
+
 
         /* --- Right Side Nav & Buttons --- */
         .nav-right {
@@ -119,6 +165,7 @@
             font-size: 16px;
             cursor: pointer;
             color: var(--text-main);
+            font-weight: 500;
         }
 
         .btn-primary {
@@ -186,15 +233,50 @@
 
     <nav class="navbar">
         <div class="nav-left">
-            <a ="#" class="logo">⚡ Orient LMS</a>
+            <a href="#" class="logo">⚡ Orient LMS</a>
             
             <div class="dropdown">
                 <button class="dropbtn">Resources ⌄</button>
                 <div class="dropdown-content">
-                    <a ="02-igcse-physics/ac-generator.html">📐 AC Generator Simulation</a>
-                    <a ="02-igcse-physics/dc-generator.html">🧲 DC Generator Simulation</a>
-                    <a ="#">📝 Revision Notes</a>
-                    <a ="#">🎯 Past Papers</a>
+                    
+                    <div class="sub-dropdown">
+                        <a href="#">IGCSE Math <span>⏵</span></a>
+                        <div class="sub-dropdown-content">
+                            <a href="#" class="empty-notice">Content in development...</a>
+                        </div>
+                    </div>
+
+                    <div class="sub-dropdown">
+                        <a href="#">IGCSE Add Math <span>⏵</span></a>
+                        <div class="sub-dropdown-content">
+                            <a href="#" class="empty-notice">Content in development...</a>
+                        </div>
+                    </div>
+
+                    <div class="sub-dropdown">
+                        <a href="#">IGCSE Physics <span>⏵</span></a>
+                        <div class="sub-dropdown-content">
+                            <a href="02-igcse-physics/c1-general-physics/index.html">1. General Physics</a>
+                            <a href="02-igcse-physics/c2-thermal-physics/index.html">2. Thermal Physics</a>
+                            <a href="02-igcse-physics/c3-waves-light-sound/index.html">3. Waves, Light & Sound</a>
+                            <a href="02-igcse-physics/c4-electricity-magnetism/index.html">4. Electricity & Magnetism</a>
+                            <a href="02-igcse-physics/c5-nuclear-physics/index.html">5. Nuclear Physics</a>
+                            <a href="02-igcse-physics/c6-space-physics/index.html">6. Space Physics</a>
+                        </div>
+                    </div>
+
+                    <div class="sub-dropdown">
+                        <a href="#">IGCSE Chemistry <span>⏵</span></a>
+                        <div class="sub-dropdown-content">
+                            <a href="04-igcse-chemistry/c1-exp-technique-and-separation/index.html">1. Exp. Technique & Separation</a>
+                            <a href="04-igcse-chemistry/c2-acid-bases-salt/index.html">2. Acids, Bases & Salts</a>
+                            <a href="04-igcse-chemistry/c3-rate-of-reaction/index.html">3. Rate of Reaction</a>
+                            <a href="04-igcse-chemistry/c4-electrochemistry/index.html">4. Electrochemistry</a>
+                            <a href="04-igcse-chemistry/c5-chemical-energetics/index.html">5. Chemical Energetics</a>
+                            <a href="04-igcse-chemistry/c6-organic-chemistry/index.html">6. Organic Chemistry</a>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -202,17 +284,17 @@
         <div class="nav-right">
             <input type="text" class="search-bar" placeholder="Search for a subject...">
             <button class="btn-login">Log in</button>
-            <a ="#" class="btn-primary">Join now for free</a>
+            <a href="#" class="btn-primary">Join now for free</a>
         </div>
     </nav>
 
     <div class="hero">
         <h1>Master IGCSE Sciences with Interactive Simulations</h1>
-        <p>Join Orient Academy's ultimate digital tool. Streamline your learning with 3D models, interactive Add Math graphs, and exam-specific resources that guarantee technical fluency.</p>
+        <p>Join Orient Academy's ultimate digital tool. Streamline your learning with 3D models, interactive graphs, and exam-specific resources that guarantee technical fluency.</p>
         
         <div class="hero-buttons">
-            <a ="#" class="btn-primary">Explore Simulations</a>
-            <a ="#" class="btn-secondary">I'm a student</a>
+            <a href="#" class="btn-primary">Explore Simulations</a>
+            <a href="#" class="btn-secondary">I'm a student</a>
         </div>
     </div>
 
