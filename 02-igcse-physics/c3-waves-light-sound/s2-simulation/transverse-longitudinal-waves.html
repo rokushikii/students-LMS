@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transverse vs Longitudinal Waves</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f8fafc;
+            --primary-accent: #38bdf8;
+            --secondary-accent: #e879f9;
+            --border-color: #334155;
+            --control-bg: #334155;
+            --control-hover: #475569;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-color: #0f172a;
+            --primary-accent: #0284c7;
+            --secondary-accent: #c026d3;
+            --border-color: #e2e8f0;
+            --control-bg: #e2e8f0;
+            --control-hover: #cbd5e1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .theme-toggle {
+            background: var(--control-bg);
+            border: none;
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--control-hover);
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            flex: 1;
+        }
+
+        @media (min-width: 1024px) {
+            .main-content {
+                flex-direction: row;
+            }
+        }
+
+        .controls-panel {
+            background: var(--panel-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        select, button {
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--control-bg);
+            color: var(--text-color);
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            transition: background 0.2s;
+        }
+
+        select:hover, button:hover {
+            background: var(--control-hover);
+        }
+
+        button.primary-btn {
+            background: var(--primary-accent);
+            color: #fff;
+            border: none;
+        }
+
+        button.primary-btn:hover {
+            background: #0284c7;
+        }
+
+        .simulations {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            flex: 3;
+        }
+
+        .canvas-container {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .canvas-title {
+            align-self: flex-start;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        canvas {
+            width: 100%;
+            max-width: 100%;
+            border-radius: 8px;
+            background: #000; /* Contrast for waves */
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>Wave Simulator</h1>
+        <button class="theme-toggle" id="theme-btn">☀️ Light Mode</button>
+    </header>
+
+    <div class="main-content">
+        <div class="controls-panel">
+            <div class="control-group">
+                <button class="primary-btn" id="play-pause-btn">Pause Simulation</button>
+            </div>
+            
+            <div class="control-group">
+                <label>Amplitude <span id="amp-val">50</span></label>
+                <input type="range" id="amplitude-slider" min="10" max="100" value="50">
+            </div>
+
+            <div class="control-group">
+                <label>Frequency <span id="freq-val">1.0</span> Hz</label>
+                <input type="range" id="frequency-slider" min="0.1" max="3.0" step="0.1" value="1.0">
+            </div>
+
+            <div class="control-group">
+                <label>Medium (Longitudinal)</label>
+                <select id="medium-select">
+                    <option value="spring">Spring (Clear visualization)</option>
+                    <option value="solid">Solid (Fastest, tight particles)</option>
+                    <option value="liquid">Liquid (Medium speed)</option>
+                    <option value="gas">Gas (Slowest, loose particles)</option>
+                </select>
+                <small style="color: var(--primary-accent); margin-top: 5px; font-size: 0.8rem;">Changes speed and particle spacing</small>
+            </div>
+        </div>
+
+        <div class="simulations">
+            <div class="canvas-container">
+                <div class="canvas-title" style="color: var(--primary-accent);">Transverse Wave</div>
+                <canvas id="transverseCanvas" width="800" height="300"></canvas>
+            </div>
+            <div class="canvas-container">
+                <div class="canvas-title" style="color: var(--secondary-accent);">Longitudinal Wave</div>
+                <canvas id="longitudinalCanvas" width="800" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme toggle
+        const themeBtn = document.getElementById('theme-btn');
+        let isDark = true;
+        themeBtn.addEventListener('click', () => {
+            isDark = !isDark;
+            if (isDark) {
+                document.body.removeAttribute('data-theme');
+                themeBtn.textContent = '☀️ Light Mode';
+            } else {
+                document.body.setAttribute('data-theme', 'light');
+                themeBtn.textContent = '🌙 Dark Mode';
+            }
+        });
+
+        // Setup Controls
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        let isPlaying = true;
+        playPauseBtn.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            playPauseBtn.textContent = isPlaying ? 'Pause Simulation' : 'Play Simulation';
+        });
+
+        const ampSlider = document.getElementById('amplitude-slider');
+        const freqSlider = document.getElementById('frequency-slider');
+        const mediumSelect = document.getElementById('medium-select');
+        const ampVal = document.getElementById('amp-val');
+        const freqVal = document.getElementById('freq-val');
+
+        ampSlider.addEventListener('input', (e) => ampVal.textContent = e.target.value);
+        freqSlider.addEventListener('input', (e) => freqVal.textContent = parseFloat(e.target.value).toFixed(1));
+
+        // Canvas Setup
+        const tCanvas = document.getElementById('transverseCanvas');
+        const tCtx = tCanvas.getContext('2d');
+        const lCanvas = document.getElementById('longitudinalCanvas');
+        const lCtx = lCanvas.getContext('2d');
+
+        // Animation Loop
+        let time = 0;
+        function animate() {
+            if (isPlaying) {
+                time += 0.05 * parseFloat(freqSlider.value);
+            }
+            
+            drawTransverseWave();
+            drawLongitudinalWave();
+            
+            requestAnimationFrame(animate);
+        }
+
+        function drawTransverseWave() {
+            tCtx.clearRect(0, 0, tCanvas.width, tCanvas.height);
+            
+            const A = parseFloat(ampSlider.value);
+            const wavelength = 200;
+            const k = (2 * Math.PI) / wavelength;
+            const centerY = tCanvas.height / 2;
+            
+            // Draw Center Line
+            tCtx.beginPath();
+            tCtx.moveTo(0, centerY);
+            tCtx.lineTo(tCanvas.width, centerY);
+            tCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            tCtx.setLineDash([5, 5]);
+            tCtx.stroke();
+            tCtx.setLineDash([]);
+
+            // Draw Sine Curve
+            tCtx.beginPath();
+            for (let x = 0; x <= tCanvas.width; x += 2) {
+                const y = centerY - A * Math.sin(k * x - time);
+                if (x === 0) tCtx.moveTo(x, y);
+                else tCtx.lineTo(x, y);
+            }
+            tCtx.strokeStyle = 'rgba(56, 189, 248, 0.5)'; // Primary accent with opacity
+            tCtx.lineWidth = 3;
+            tCtx.stroke();
+
+            // Draw Particles
+            tCtx.fillStyle = '#38bdf8'; // Primary accent
+            const numParticles = 40;
+            const spacing = tCanvas.width / numParticles;
+            for (let i = 0; i <= numParticles; i++) {
+                const x = i * spacing;
+                const y = centerY - A * Math.sin(k * x - time);
+                
+                tCtx.beginPath();
+                tCtx.arc(x, y, 4, 0, Math.PI * 2);
+                tCtx.fill();
+            }
+
+            // Draw Annotations: Amplitude
+            // Find the first peak
+            let firstPeakX = ((Math.PI / 2) + time) / k;
+            // normalize to within canvas roughly
+            while(firstPeakX > wavelength) firstPeakX -= wavelength;
+            while(firstPeakX < 0) firstPeakX += wavelength;
+            
+            if (firstPeakX + 20 < tCanvas.width) {
+                tCtx.beginPath();
+                tCtx.moveTo(firstPeakX, centerY);
+                tCtx.lineTo(firstPeakX, centerY - A);
+                tCtx.strokeStyle = '#facc15'; // yellow for contrast
+                tCtx.lineWidth = 2;
+                tCtx.stroke();
+                
+                // Arrows for amplitude
+                tCtx.beginPath();
+                tCtx.moveTo(firstPeakX - 5, centerY - A + 5);
+                tCtx.lineTo(firstPeakX, centerY - A);
+                tCtx.lineTo(firstPeakX + 5, centerY - A + 5);
+                tCtx.stroke();
+                
+                tCtx.fillStyle = '#facc15';
+                tCtx.font = "14px Inter";
+                tCtx.fillText("Amplitude", firstPeakX + 10, centerY - A / 2);
+            }
+
+            // Draw Annotations: Wavelength
+            const secondPeakX = firstPeakX + wavelength;
+            if (secondPeakX < tCanvas.width) {
+                const waveY = centerY - A - 20; // draw above the wave
+                tCtx.beginPath();
+                tCtx.moveTo(firstPeakX, waveY);
+                tCtx.lineTo(secondPeakX, waveY);
+                tCtx.strokeStyle = '#4ade80'; // green
+                tCtx.lineWidth = 2;
+                tCtx.stroke();
+                
+                // Ticks for wavelength
+                tCtx.beginPath();
+                tCtx.moveTo(firstPeakX, waveY - 5); tCtx.lineTo(firstPeakX, waveY + 5);
+                tCtx.moveTo(secondPeakX, waveY - 5); tCtx.lineTo(secondPeakX, waveY + 5);
+                tCtx.stroke();
+
+                tCtx.fillStyle = '#4ade80';
+                tCtx.fillText("Wavelength (\u03BB)", (firstPeakX + secondPeakX) / 2 - 40, waveY - 10);
+            }
+        }
+
+        function drawLongitudinalWave() {
+            lCtx.clearRect(0, 0, lCanvas.width, lCanvas.height);
+            
+            const medium = mediumSelect.value;
+            let speedMultiplier = 1;
+            let rows = 5;
+            let baseSpacing = 15;
+            // Scale displacement to prevent particles from crossing each other (A * k < 1)
+            // Max amplitude slider is 100. If we use 0.3, max visualA is 30.
+            // With wavelength 200, k = ~0.0314, so max A*k = ~0.94 < 1.
+            let visualA = parseFloat(ampSlider.value) * 0.3; 
+
+            if (medium === 'spring') {
+                rows = 1;
+                baseSpacing = 8; // tighter for coils
+            } else if (medium === 'solid') {
+                speedMultiplier = 2.0;
+                baseSpacing = 10;
+                rows = 8;
+            } else if (medium === 'liquid') {
+                speedMultiplier = 1.0;
+                baseSpacing = 20;
+                rows = 5;
+            } else if (medium === 'gas') {
+                speedMultiplier = 0.5;
+                baseSpacing = 35;
+                rows = 3;
+                // removed visualA scale up for gas to prevent crossing illusion
+            }
+
+            const wavelength = 200;
+            const k = (2 * Math.PI) / wavelength;
+            const centerY = lCanvas.height / 2;
+            const effectiveTime = time * speedMultiplier;
+
+            lCtx.fillStyle = '#e879f9'; // Secondary accent
+
+            // Generate base particle positions
+            const numCols = Math.ceil(lCanvas.width / baseSpacing) + 4; // extra buffer
+            
+            if (medium === 'spring') {
+                // Draw spring coils as vertical lines
+                lCtx.strokeStyle = '#e879f9';
+                lCtx.lineWidth = 2;
+                lCtx.beginPath();
+                
+                for (let i = 0; i < numCols; i++) {
+                    const x0 = i * baseSpacing;
+                    const dx = visualA * Math.sin(k * x0 - effectiveTime);
+                    const x = x0 + dx;
+                    
+                    const coilTop = centerY - 30;
+                    const coilBot = centerY + 30;
+                    
+                    lCtx.moveTo(x, coilTop);
+                    lCtx.lineTo(x, coilBot);
+                    
+                    // Connecting lines to make it look like a continuous spring
+                    if (i > 0) {
+                        const prevX0 = (i - 1) * baseSpacing;
+                        const prevDx = visualA * Math.sin(k * prevX0 - effectiveTime);
+                        const prevX = prevX0 + prevDx;
+                        lCtx.moveTo(prevX, coilBot);
+                        lCtx.lineTo(x, coilTop);
+                    }
+                }
+                lCtx.stroke();
+            } else {
+                // Draw particles for Solid, Liquid, Gas
+                const rowSpacing = baseSpacing;
+                const totalHeight = (rows - 1) * rowSpacing;
+                const startY = centerY - totalHeight / 2;
+                
+                for (let r = 0; r < rows; r++) {
+                    for (let i = 0; i < numCols; i++) {
+                        const x0 = i * baseSpacing;
+                        const dx = visualA * Math.sin(k * x0 - effectiveTime);
+                        const x = x0 + dx;
+                        
+                        // Add slight random offset for gas/liquid to look more natural
+                        let yOffset = 0;
+                        if (medium === 'gas') {
+                            yOffset = (Math.sin(x0 * 123 + r * 321) * rowSpacing * 0.4);
+                        } else if (medium === 'liquid') {
+                            yOffset = (Math.sin(x0 * 456 + r * 654) * rowSpacing * 0.2);
+                        }
+
+                        const y = startY + r * rowSpacing + yOffset;
+                        
+                        lCtx.beginPath();
+                        lCtx.arc(x, y, 3, 0, Math.PI * 2);
+                        lCtx.fill();
+                    }
+                }
+            }
+
+            // Draw Annotations: C and R, Wavelength
+            // Compression (C) occurs where dx = 0 and slope is negative
+            // Math.sin(k*x - w*t) = 0 and cos(..) < 0
+            // so k*x - w*t = pi + 2*n*pi
+            let cX = ((Math.PI) + effectiveTime) / k;
+            while(cX > wavelength) cX -= wavelength;
+            while(cX < 0) cX += wavelength;
+
+            // Rarefaction (R) occurs where dx = 0 and slope is positive
+            // k*x - w*t = 0 + 2*n*pi
+            let rX = (0 + effectiveTime) / k;
+            while(rX > wavelength) rX -= wavelength;
+            while(rX < 0) rX += wavelength;
+
+            lCtx.font = "bold 16px Inter";
+            lCtx.textAlign = "center";
+            
+            // Mark C and R
+            for (let x = cX; x < lCanvas.width; x += wavelength) {
+                lCtx.fillStyle = '#facc15';
+                lCtx.fillText("C", x, centerY + 80);
+            }
+            for (let x = rX; x < lCanvas.width; x += wavelength) {
+                lCtx.fillStyle = '#4ade80';
+                lCtx.fillText("R", x, centerY + 80);
+            }
+
+            // Wavelength annotation between C and C
+            const cX1 = cX;
+            const cX2 = cX + wavelength;
+            if (cX2 < lCanvas.width) {
+                const waveY = centerY - 80;
+                lCtx.beginPath();
+                lCtx.moveTo(cX1, waveY);
+                lCtx.lineTo(cX2, waveY);
+                lCtx.strokeStyle = '#facc15';
+                lCtx.lineWidth = 2;
+                lCtx.stroke();
+                
+                // Ticks
+                lCtx.beginPath();
+                lCtx.moveTo(cX1, waveY - 5); lCtx.lineTo(cX1, waveY + 5);
+                lCtx.moveTo(cX2, waveY - 5); lCtx.lineTo(cX2, waveY + 5);
+                lCtx.stroke();
+
+                lCtx.fillStyle = '#facc15';
+                lCtx.fillText("Wavelength (\u03BB)", (cX1 + cX2) / 2, waveY - 10);
+            }
+            lCtx.textAlign = "left"; // reset
+        }
+
+        // Handle resizing for responsiveness
+        function resizeCanvases() {
+            const containers = document.querySelectorAll('.canvas-container');
+            tCanvas.width = containers[0].clientWidth - 32; // 1rem padding = 16px * 2
+            lCanvas.width = containers[1].clientWidth - 32;
+        }
+
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases(); // Initial size
+
+        // Start
+        animate();
+    </script>
+</body>
+</html>
