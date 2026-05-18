@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ripple Tank Simulator</title>
+    <link rel="stylesheet" href="ripple-tank.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <button id="menu-toggle" class="menu-toggle" aria-label="Toggle Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+    </button>
+
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>Ripple Tank</h1>
+                <p>Wave Behavior Simulator</p>
+            </div>
+
+            <!-- Setup Illustration / Diagram placeholder -->
+            <div class="setup-diagram">
+                <div class="tank-graphic">
+                    <div class="water"></div>
+                    <div class="motor"></div>
+                    <div class="light"></div>
+                </div>
+                <div class="setup-caption">Setup View</div>
+            </div>
+
+            <div class="control-group">
+                <h3>Scenario</h3>
+                <div class="radio-group" id="scenario-selector">
+                    <label class="radio-label">
+                        <input type="radio" name="scenario" value="reflection" checked>
+                        <span>Reflection</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="scenario" value="refraction">
+                        <span>Refraction</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="scenario" value="diffraction-gap">
+                        <span>Diffraction (Gap)</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="scenario" value="diffraction-edge">
+                        <span>Diffraction (Edge)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Global Parameters</h3>
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <label for="frequency">Motor Frequency (f)</label>
+                        <span id="frequency-val" class="value-display">5 Hz</span>
+                    </div>
+                    <input type="range" id="frequency" min="1" max="10" step="0.1" value="5">
+                </div>
+            </div>
+
+            <div class="control-group" id="contextual-controls">
+                <h3>Scenario Parameters</h3>
+                
+                <!-- Reflection Controls -->
+                <div id="controls-reflection" class="scenario-controls active">
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <label for="barrier-angle">Barrier Angle</label>
+                            <span id="barrier-angle-val" class="value-display">45°</span>
+                        </div>
+                        <input type="range" id="barrier-angle" min="0" max="90" step="1" value="45">
+                    </div>
+                </div>
+
+                <!-- Refraction Controls -->
+                <div id="controls-refraction" class="scenario-controls">
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <label for="boundary-angle">Boundary Angle</label>
+                            <span id="boundary-angle-val" class="value-display">30°</span>
+                        </div>
+                        <input type="range" id="boundary-angle" min="-60" max="60" step="1" value="30">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <label for="depth-ratio">Shallow Depth (Speed ratio)</label>
+                            <span id="depth-ratio-val" class="value-display">0.5x</span>
+                        </div>
+                        <input type="range" id="depth-ratio" min="0.2" max="0.9" step="0.1" value="0.5">
+                    </div>
+                </div>
+
+                <!-- Diffraction Gap Controls -->
+                <div id="controls-diffraction-gap" class="scenario-controls">
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <label for="gap-size">Gap Size</label>
+                            <span id="gap-size-val" class="value-display">20 px</span>
+                        </div>
+                        <input type="range" id="gap-size" min="10" max="150" step="1" value="20">
+                    </div>
+                </div>
+                
+                <!-- Diffraction Edge Controls -->
+                <div id="controls-diffraction-edge" class="scenario-controls">
+                     <p class="help-text">Observe how waves curve around the edge of the barrier. Adjust frequency to see the effect of wavelength.</p>
+                </div>
+            </div>
+
+            <div class="equation-panel">
+                <div class="eq-title">Wave Equation</div>
+                <div class="equation">v = f &lambda;</div>
+                <div class="eq-vars">
+                    <div class="eq-row"><span class="var">v (Speed):</span> <span id="eq-v" class="val">100 px/s</span></div>
+                    <div class="eq-row"><span class="var">f (Frequency):</span> <span id="eq-f" class="val">5.0 Hz</span></div>
+                    <div class="eq-row"><span class="var">&lambda; (Wavelength):</span> <span id="eq-l" class="val">20 px</span></div>
+                </div>
+                <div class="eq-note" id="eq-note">In constant depth, speed (v) is constant.</div>
+            </div>
+
+        </aside>
+
+        <!-- Main Simulation Area -->
+        <main class="simulation-area">
+            <canvas id="ripple-canvas"></canvas>
+        </main>
+    </div>
+
+    <script src="ripple-tank.js"></script>
+</body>
+</html>
