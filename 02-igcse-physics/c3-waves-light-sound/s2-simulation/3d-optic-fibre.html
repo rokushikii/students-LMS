@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Optical Fiber Simulation</title>
+    <style>
+        :root {
+            /* Dark Mode (Default) */
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.85);
+            --text-main: #f8fafc;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .light-mode {
+            --bg-color: #f8fafc;
+            --panel-bg: rgba(255, 255, 255, 0.85);
+            --text-main: #0f172a;
+            --border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color); color: var(--text-main);
+            overflow: hidden; transition: background-color 0.3s;
+        }
+
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        /* UI Panel */
+        #ui-panel {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 800px;
+            background-color: var(--panel-bg); backdrop-filter: blur(10px);
+            padding: 20px; border-radius: 16px; border: 1px solid var(--border-color);
+            display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 10; transition: all 0.3s;
+        }
+
+        .controls-row { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; align-items: center; }
+        
+        .slider-group { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 200px; }
+        .slider-group label { font-weight: 600; font-size: 14px; white-space: nowrap; }
+        .slider-val { background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 6px; font-family: monospace; }
+        .light-mode .slider-val { background: rgba(0,0,0,0.05); }
+        input[type=range] { flex: 1; cursor: pointer; accent-color: var(--accent); }
+
+        .btn-group { display: flex; gap: 10px; }
+        button {
+            background-color: var(--panel-bg); color: var(--text-main);
+            border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 8px;
+            font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        button:hover { background-color: var(--accent); color: white; border-color: var(--accent); }
+        button.active { background-color: var(--accent); color: white; border-color: var(--accent); }
+
+        #theme-toggle {
+            position: absolute; top: 20px; right: 20px; z-index: 10;
+            padding: 10px 15px; border-radius: 30px; font-size: 14px;
+            background: var(--panel-bg); color: var(--text-main); border: 1px solid var(--border-color);
+            backdrop-filter: blur(5px); cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        #instructions {
+            position: absolute; top: 20px; left: 20px; pointer-events: none;
+            background: var(--panel-bg); padding: 15px; border-radius: 8px;
+            border: 1px solid var(--border-color); backdrop-filter: blur(5px);
+            font-size: 14px; line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            #ui-panel { bottom: 10px; padding: 15px; }
+            .controls-row { flex-direction: column; align-items: stretch; gap: 10px; }
+            #instructions { display: none; }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<button id="theme-toggle">☀️ Light Mode</button>
+
+<div id="instructions">
+    <strong>Optical Fiber Simulator</strong><br>
+    • Click and drag the glowing spheres to bend the fiber.<br>
+    • Watch TIR fail if the bend is too sharp!<br>
+    • Adjust refractive indices below.
+</div>
+
+<div id="ui-panel">
+    <div class="controls-row">
+        <div class="slider-group">
+            <label>Core Index (n₁)</label>
+            <input type="range" id="slider-n1" min="1.0" max="2.0" step="0.01" value="1.50">
+            <span class="slider-val" id="val-n1">1.50</span>
+        </div>
+        <div class="slider-group">
+            <label>Cladding Index (n₂)</label>
+            <input type="range" id="slider-n2" min="1.0" max="2.0" step="0.01" value="1.40">
+            <span class="slider-val" id="val-n2">1.40</span>
+        </div>
+    </div>
+    
+    <div class="controls-row">
+        <div class="btn-group">
+            <button id="btn-single" class="active">Single Ray</button>
+            <button id="btn-multi">Multiple Rays</button>
+        </div>
+        <button id="btn-reset" style="flex: 1; max-width: 200px;">Reset Shape</button>
+    </div>
+</div>
+
+<script>
+    // --- State Variables ---
+    let n_core = 1.50;
+    let n_clad = 1.40;
+    let isMulti = false;
+    let isLightMode = false;
+
+    // --- Scene Setup ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#0f172a');
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 30, 80);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(10, 50, 20);
+    scene.add(dirLight);
+
+    // --- Fiber Geometry ---
+    let controlPoints = [];
+    const defaultPoints = [
+        new THREE.Vector3(-30, 0, 0),
+        new THREE.Vector3(-10, 10, 0),
+        new THREE.Vector3(10, -10, 0),
+        new THREE.Vector3(30, 0, 0)
+    ];
+
+    let curve, coreMesh, cladMesh, raycastMesh;
+    const handles = [];
+    const rayGroup = new THREE.Group();
+    scene.add(rayGroup);
+
+    const coreMaterial = new THREE.MeshPhysicalMaterial({ 
+        color: 0x38bdf8, transparent: true, opacity: 0.45, roughness: 0.1, transmission: 0.4, side: THREE.DoubleSide, depthWrite: false 
+    });
+    
+    // Default Cladding Material (Dark Mode setup)
+    const cladMaterial = new THREE.MeshPhysicalMaterial({ 
+        color: 0xffffff, transparent: true, opacity: 0.25, roughness: 0.4, transmission: 0.6, side: THREE.DoubleSide, depthWrite: false 
+    });
+    
+    // Invisible mesh specifically for calculating internal bounces
+    const raycastMaterial = new THREE.MeshBasicMaterial({ side: THREE.BackSide, visible: false });
+
+    function initFiber() {
+        controlPoints = defaultPoints.map(p => p.clone());
+        
+        const handleGeo = new THREE.SphereGeometry(1.5, 32, 32);
+        const handleMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8 });
+
+        controlPoints.forEach((pt, i) => {
+            const handle = new THREE.Mesh(handleGeo, handleMat);
+            handle.position.copy(pt);
+            handle.userData.index = i;
+            scene.add(handle);
+            handles.push(handle);
+        });
+
+        updateFiberGeometry();
+    }
+
+    function updateFiberGeometry() {
+        if (coreMesh) scene.remove(coreMesh);
+        if (cladMesh) scene.remove(cladMesh);
+        if (raycastMesh) scene.remove(raycastMesh);
+
+        curve = new THREE.CatmullRomCurve3(controlPoints);
+        
+        // Upgraded to 64 segments for ultra-smooth cylindrical normals!
+        const coreGeo = new THREE.TubeGeometry(curve, 100, 2.0, 64, false);
+        const cladGeo = new THREE.TubeGeometry(curve, 100, 2.8, 64, false);
+
+        coreMesh = new THREE.Mesh(coreGeo, coreMaterial);
+        cladMesh = new THREE.Mesh(cladGeo, cladMaterial);
+        raycastMesh = new THREE.Mesh(coreGeo, raycastMaterial);
+
+        scene.add(coreMesh);
+        scene.add(cladMesh);
+        scene.add(raycastMesh);
+    }
+
+    // --- Ray Tracing Physics ---
+    const raycaster = new THREE.Raycaster();
+
+    function refractVector(incident, normal, ratio) {
+        const cosI = -incident.dot(normal);
+        const sinT2 = ratio * ratio * (1.0 - cosI * cosI);
+        if (sinT2 > 1.0) return null; // TIR
+        const cosT = Math.sqrt(1.0 - sinT2);
+        return incident.clone().multiplyScalar(ratio).add(normal.clone().multiplyScalar(ratio * cosI - cosT)).normalize();
+    }
+
+    function traceLight() {
+        // Clear old rays and arrows
+        while(rayGroup.children.length > 0) {
+            rayGroup.remove(rayGroup.children[0]);
+        }
+
+        const startPt = curve.getPoint(0);
+        const initialTangent = curve.getTangent(0).normalize();
+        
+        const rayColors = [0xef4444, 0xf59e0b, 0x10b981, 0x8b5cf6, 0xec4899];
+        
+        let origins = [];
+        let dirs = [];
+        
+        if (!isMulti) {
+            origins.push(startPt.clone());
+            dirs.push(initialTangent.clone());
+        } else {
+            const up = new THREE.Vector3(0, 1, 0);
+            const right = new THREE.Vector3().crossVectors(initialTangent, up).normalize();
+            const realUp = new THREE.Vector3().crossVectors(right, initialTangent).normalize();
+
+            for (let i = 0; i < 5; i++) {
+                const angle = (i / 5) * Math.PI * 2;
+                const offset = right.clone().multiplyScalar(Math.cos(angle)).add(realUp.clone().multiplyScalar(Math.sin(angle)));
+                
+                // Spawn a tighter bundle, and make them travel PERFECTLY parallel
+                origins.push(startPt.clone().add(offset.multiplyScalar(0.6))); 
+                dirs.push(initialTangent.clone()); 
+            }
+        }
+
+        origins.forEach((origin, idx) => {
+            let currentOrigin = origin.clone();
+            let currentDir = dirs[idx].clone();
+            let color = rayColors[idx % rayColors.length];
+            
+            const maxBounces = 40;
+            let bounces = 0;
+
+            while (bounces < maxBounces) {
+                raycaster.set(currentOrigin, currentDir);
+                
+                const intersects = raycaster.intersectObject(raycastMesh);
+
+                if (intersects.length > 0) {
+                    const hit = intersects[0];
+                    
+                    if (hit.distance < 0.1) {
+                        currentOrigin.add(currentDir.clone().multiplyScalar(0.15));
+                        continue; 
+                    }
+
+                    const inwardNormal = hit.face.normal.clone().transformDirection(raycastMesh.matrixWorld).normalize().negate();
+                    
+                    const lineMat = new THREE.LineBasicMaterial({ color: color, linewidth: 2 });
+                    const lineGeo = new THREE.BufferGeometry().setFromPoints([currentOrigin, hit.point]);
+                    rayGroup.add(new THREE.Line(lineGeo, lineMat));
+
+                    const arrowDir = currentDir.clone();
+                    const arrowLen = Math.min(hit.distance, 4); 
+                    if (hit.distance > 2) {
+                        const arrow = new THREE.ArrowHelper(arrowDir, currentOrigin.clone().add(arrowDir.clone().multiplyScalar(hit.distance/2 - arrowLen/2)), arrowLen, color, 1.2, 0.8);
+                        rayGroup.add(arrow);
+                    }
+
+                    // Physics: Check TIR
+                    const angleIncidence = currentDir.clone().negate().angleTo(inwardNormal);
+                    
+                    let criticalAngle = Math.PI; 
+                    if (n_clad < n_core) {
+                        criticalAngle = Math.asin(n_clad / n_core);
+                    }
+
+                    // Epsilon applied to account for tiny floating point errors on smooth cylinders
+                    if (angleIncidence >= criticalAngle - 0.0001) {
+                        currentDir = currentDir.clone().reflect(inwardNormal).normalize();
+                        currentOrigin = hit.point.clone().add(currentDir.clone().multiplyScalar(0.05)); 
+                    } else {
+                        const ratio = n_core / n_clad;
+                        const exitDir = refractVector(currentDir, inwardNormal, ratio) || currentDir.clone();
+                        
+                        const escapeEnd = hit.point.clone().add(exitDir.multiplyScalar(10));
+                        const escapeLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([hit.point, escapeEnd]), new THREE.LineBasicMaterial({ color: 0xef4444 }));
+                        rayGroup.add(escapeLine);
+                        
+                        rayGroup.add(new THREE.ArrowHelper(exitDir.clone().normalize(), hit.point, 4, 0xef4444, 1.2, 0.8));
+                        
+                        break; 
+                    }
+                } else {
+                    const endPt = currentOrigin.clone().add(currentDir.multiplyScalar(20));
+                    const endLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([currentOrigin, endPt]), new THREE.LineBasicMaterial({ color: color }));
+                    rayGroup.add(endLine);
+                    rayGroup.add(new THREE.ArrowHelper(currentDir, currentOrigin, 4, color, 1.2, 0.8));
+                    break;
+                }
+                bounces++;
+            }
+        });
+    }
+
+    // --- Drag & Drop Interaction ---
+    const dragPlane = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshBasicMaterial({ visible: false }));
+    scene.add(dragPlane);
+
+    let activeHandle = null;
+    let isDragging = false;
+    const mouse = new THREE.Vector2();
+
+    window.addEventListener('pointerdown', (e) => {
+        if (e.target !== renderer.domElement) return;
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(handles);
+
+        if (intersects.length > 0) {
+            controls.enabled = false;
+            isDragging = true;
+            activeHandle = intersects[0].object;
+            
+            dragPlane.position.copy(activeHandle.position);
+            dragPlane.quaternion.copy(camera.quaternion);
+        }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+        if (!isDragging || !activeHandle) return;
+        
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObject(dragPlane);
+
+        if (intersects.length > 0) {
+            activeHandle.position.copy(intersects[0].point);
+            controlPoints[activeHandle.userData.index].copy(intersects[0].point);
+            updateFiberGeometry();
+        }
+    });
+
+    window.addEventListener('pointerup', () => {
+        isDragging = false;
+        activeHandle = null;
+        controls.enabled = true;
+    });
+
+    // --- UI Listeners ---
+    document.getElementById('slider-n1').addEventListener('input', (e) => {
+        n_core = parseFloat(e.target.value);
+        document.getElementById('val-n1').innerText = n_core.toFixed(2);
+    });
+
+    document.getElementById('slider-n2').addEventListener('input', (e) => {
+        n_clad = parseFloat(e.target.value);
+        document.getElementById('val-n2').innerText = n_clad.toFixed(2);
+    });
+
+    document.getElementById('btn-single').addEventListener('click', (e) => {
+        isMulti = false;
+        e.target.classList.add('active');
+        document.getElementById('btn-multi').classList.remove('active');
+    });
+
+    document.getElementById('btn-multi').addEventListener('click', (e) => {
+        isMulti = true;
+        e.target.classList.add('active');
+        document.getElementById('btn-single').classList.remove('active');
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+        controlPoints = defaultPoints.map(p => p.clone());
+        handles.forEach((h, i) => h.position.copy(controlPoints[i]));
+        updateFiberGeometry();
+        camera.position.set(0, 30, 80);
+        controls.target.set(0,0,0);
+    });
+
+    document.getElementById('theme-toggle').addEventListener('click', (e) => {
+        isLightMode = !isLightMode;
+        document.body.classList.toggle('light-mode', isLightMode);
+        e.target.innerText = isLightMode ? "🌙 Dark Mode" : "☀️ Light Mode";
+        scene.background.set(isLightMode ? '#f8fafc' : '#0f172a');
+        
+        if (isLightMode) {
+            cladMaterial.color.setHex(0x64748b);
+            cladMaterial.opacity = 0.5;
+            cladMaterial.transmission = 0.2; 
+        } else {
+            cladMaterial.color.setHex(0xffffff); 
+            cladMaterial.opacity = 0.25;
+            cladMaterial.transmission = 0.6; 
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- Boot & Render Loop ---
+    initFiber();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        traceLight(); 
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+
+</script>
+</body>
+</html>
