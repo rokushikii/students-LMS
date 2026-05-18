@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prism Dispersion Simulator</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --accent: #3b82f6;
+        }
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color); color: var(--text-main);
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        #canvas-container {
+            flex: 1; position: relative; width: 100%;
+        }
+        canvas {
+            display: block; width: 100%; height: 100%;
+        }
+        #ui-panel {
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column; gap: 15px;
+            max-height: 40vh; overflow-y: auto;
+        }
+        .controls-header {
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .controls-header h2 { margin: 0; font-size: 18px; }
+        .slider-row {
+            display: flex; align-items: center; gap: 15px;
+        }
+        .slider-row label { flex-shrink: 0; width: 120px; font-weight: 600; }
+        input[type=range] { flex-grow: 1; cursor: pointer; }
+        #angle-val { width: 40px; text-align: right; font-family: monospace; }
+        
+        .toggles-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;
+            background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;
+        }
+        .toggle-item {
+            display: flex; align-items: center; gap: 8px; cursor: pointer;
+        }
+        .toggle-item input { cursor: pointer; width: 16px; height: 16px; }
+        .color-dot {
+            width: 12px; height: 12px; border-radius: 50%; display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div id="canvas-container">
+    <canvas id="simCanvas"></canvas>
+</div>
+
+<div id="ui-panel">
+    <div class="controls-header">
+        <h2>Light Controls</h2>
+        <button id="toggle-all-btn" style="padding: 6px 12px; border-radius: 4px; border: none; background: var(--accent); color: white; cursor: pointer;">Toggle All / White</button>
+    </div>
+    
+    <div class="slider-row">
+        <label>Incidence Angle</label>
+        <input type="range" id="angle-slider" min="-25" max="25" value="0" step="0.5">
+        <span id="angle-val">0.0°</span>
+    </div>
+
+    <div class="toggles-grid" id="color-toggles">
+        </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Exaggerated spectral data to force a wide, highly visible dispersion fan
+    const spectrum = [
+        { name: 'Red', rgb: [255, 0, 0], hex: '#ff0000', n: 1.40, active: true },
+        { name: 'Orange', rgb: [255, 127, 0], hex: '#ff7f00', n: 1.45, active: true },
+        { name: 'Yellow', rgb: [255, 255, 0], hex: '#ffff00', n: 1.50, active: true },
+        { name: 'Green', rgb: [0, 255, 0], hex: '#00ff00', n: 1.56, active: true },
+        { name: 'Blue', rgb: [0, 100, 255], hex: '#0064ff', n: 1.62, active: true },
+        { name: 'Indigo', rgb: [75, 0, 130], hex: '#4b0082', n: 1.69, active: true },
+        { name: 'Violet', rgb: [148, 0, 211], hex: '#9400d3', n: 1.77, active: true }
+    ];
+
+    let incidenceAngleDeg = 0;
+    
+    const togglesContainer = document.getElementById('color-toggles');
+    spectrum.forEach((c, i) => {
+        const lbl = document.createElement('label');
+        lbl.className = 'toggle-item';
+        lbl.innerHTML = `
+            <input type="checkbox" id="chk-${i}" checked>
+            <span class="color-dot" style="background-color: ${c.hex}"></span>
+            ${c.name}
+        `;
+        lbl.querySelector('input').addEventListener('change', (e) => {
+            spectrum[i].active = e.target.checked;
+            draw();
+        });
+        togglesContainer.appendChild(lbl);
+    });
+
+    document.getElementById('angle-slider').addEventListener('input', (e) => {
+        incidenceAngleDeg = parseFloat(e.target.value);
+        document.getElementById('angle-val').innerText = incidenceAngleDeg.toFixed(1) + '°';
+        draw();
+    });
+
+    document.getElementById('toggle-all-btn').addEventListener('click', () => {
+        const allActive = spectrum.every(c => c.active);
+        spectrum.forEach((c, i) => {
+            c.active = !allActive;
+            document.getElementById(`chk-${i}`).checked = !allActive;
+        });
+        draw();
+    });
+
+    function resize() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+        draw();
+    }
+    window.addEventListener('resize', resize);
+
+    // Vector Normalization
+    function normalize(v) {
+        const len = Math.hypot(v.x, v.y);
+        return { x: v.x / len, y: v.y / len };
+    }
+    
+    // Snell's Law Vector Mathematics
+    function refract(incident, normal, n1, n2) {
+        const ratio = n1 / n2;
+        const cosI = -(incident.x * normal.x + incident.y * normal.y);
+        const sinT2 = ratio * ratio * (1.0 - cosI * cosI);
+        
+        if (sinT2 > 1.0) return null; // Total Internal Reflection
+        
+        const cosT = Math.sqrt(1.0 - sinT2);
+        return {
+            x: ratio * incident.x + (ratio * cosI - cosT) * normal.x,
+            y: ratio * incident.y + (ratio * cosI - cosT) * normal.y
+        };
+    }
+
+    // Flawless Ray-to-Line-Segment Intersection Algorithm
+    function raySegmentIntersect(rayOrigin, rayDir, pA, pB) {
+        const vX = pB.x - pA.x;
+        const vY = pB.y - pA.y;
+        const det = rayDir.x * vY - rayDir.y * vX;
+        
+        if (Math.abs(det) < 0.0001) return null; // Parallel rays
+
+        const diffX = pA.x - rayOrigin.x;
+        const diffY = pA.y - rayOrigin.y;
+
+        const t = (diffX * vY - diffY * vX) / det;
+        const u = (diffX * rayDir.y - diffY * rayDir.x) / det;
+
+        // t must be positive (in front of ray), u must be between 0 and 1 (on the segment)
+        if (t > 0.0001 && u >= 0 && u <= 1) {
+            return { x: rayOrigin.x + rayDir.x * t, y: rayOrigin.y + rayDir.y * t };
+        }
+        return null;
+    }
+
+    // Hue-Preserving Additive Color Mixing for the Light Source
+    function getIncidentColor() {
+        let r = 0, g = 0, b = 0, activeCount = 0;
+        
+        spectrum.forEach(c => {
+            if (c.active) {
+                r += c.rgb[0]; g += c.rgb[1]; b += c.rgb[2];
+                activeCount++;
+            }
+        });
+
+        if (activeCount === 0) return 'rgba(255,255,255,0.02)'; // Ghost ray if all off
+        if (activeCount === spectrum.length) return 'white'; // Perfect white
+        
+        // Preserve hue by scaling down evenly if any channel blows past 255
+        const max = Math.max(r, g, b);
+        if (max > 255) {
+            const scale = 255 / max;
+            r = Math.round(r * scale);
+            g = Math.round(g * scale);
+            b = Math.round(b * scale);
+        }
+        
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function draw() {
+        // Reset composite operation to draw background normally
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const scale = Math.min(canvas.width, canvas.height) * 0.3;
+
+        // 1. Define Prism Geometry
+        const pTop = { x: cx, y: cy - scale * 0.6 };
+        const pBL = { x: cx - scale * 0.6, y: cy + scale * 0.5 };
+        const pBR = { x: cx + scale * 0.6, y: cy + scale * 0.5 };
+
+        // Normal vectors facing strictly OUT of the prism faces
+        const normLeft = normalize({ x: pTop.y - pBL.y, y: pBL.x - pTop.x }); 
+        const normRight = normalize({ x: pBR.y - pTop.y, y: pTop.x - pBR.x });
+
+        // 2. Setup Light Source & Incidence
+        const source = { x: cx - scale * 1.8, y: cy + 20 };
+        const baseDir = normalize({ x: (pBL.x + pTop.x)/2 - source.x, y: (pBL.y + pTop.y)/2 - source.y });
+        
+        const rad = incidenceAngleDeg * (Math.PI / 180);
+        const incidentDir = {
+            x: baseDir.x * Math.cos(rad) - baseDir.y * Math.sin(rad),
+            y: baseDir.x * Math.sin(rad) + baseDir.y * Math.cos(rad)
+        };
+
+        // 3. Draw Target Screen
+        const screenX = canvas.width - 60;
+        const screenTop = { x: screenX, y: 0 };
+        const screenBot = { x: screenX, y: canvas.height };
+
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(screenX, 20); ctx.lineTo(screenX, canvas.height - 20); ctx.stroke();
+
+        // 4. Ray Tracing Physics Engine
+        const hit1 = raySegmentIntersect(source, incidentDir, pBL, pTop);
+        const incidentColor = getIncidentColor();
+        
+        ctx.strokeStyle = incidentColor;
+        ctx.lineWidth = 3;
+        ctx.shadowColor = incidentColor;
+        ctx.shadowBlur = 10;
+        ctx.beginPath(); 
+        ctx.moveTo(source.x, source.y);
+        
+        if (hit1) {
+            // Draw beam up to the prism boundary
+            ctx.lineTo(hit1.x, hit1.y); ctx.stroke();
+            
+            // Switch to optical additive blending for overlapping dispersed rays!
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.shadowBlur = 0; 
+            
+            spectrum.forEach((c) => {
+                if (!c.active) return;
+
+                // Entry refraction (Air to Glass)
+                const dirInside = refract(incidentDir, normLeft, 1.0, c.n);
+                if (!dirInside) return;
+
+                // Travel through glass to right face
+                const hit2 = raySegmentIntersect(hit1, dirInside, pTop, pBR);
+                if (!hit2) return;
+
+                // Exit refraction (Glass to Air). Normal points INTO glass to oppose the ray.
+                const inwardNormal = { x: -normRight.x, y: -normRight.y };
+                const dirOutside = refract(dirInside, inwardNormal, c.n, 1.0);
+                
+                if (dirOutside) {
+                    const screenHit = raySegmentIntersect(hit2, dirOutside, screenBot, screenTop);
+                    
+                    ctx.strokeStyle = c.hex;
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(hit1.x, hit1.y);
+                    ctx.lineTo(hit2.x, hit2.y);
+                    
+                    if (screenHit) {
+                        ctx.lineTo(screenHit.x, screenHit.y);
+                    } else {
+                        ctx.lineTo(hit2.x + dirOutside.x * 500, hit2.y + dirOutside.y * 500);
+                    }
+                    ctx.stroke();
+
+                    // Draw Projection Labels
+                    if (screenHit) {
+                        ctx.globalCompositeOperation = 'source-over'; // Reset to draw solid text
+                        ctx.fillStyle = c.hex;
+                        ctx.beginPath(); ctx.arc(screenHit.x, screenHit.y, 4, 0, Math.PI*2); ctx.fill();
+                        
+                        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                        ctx.fillRect(screenHit.x + 8, screenHit.y - 10, 50, 20);
+                        
+                        ctx.fillStyle = 'white';
+                        ctx.font = '11px sans-serif';
+                        ctx.fillText(c.name, screenHit.x + 12, screenHit.y + 4);
+                        ctx.globalCompositeOperation = 'lighter'; // Back to blending
+                    }
+                }
+            });
+        } else {
+            // Failsafe: Beam missed the prism completely
+            ctx.lineTo(source.x + incidentDir.x * 1000, source.y + incidentDir.y * 1000); 
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        // 5. Render Prism (Draw last so it overlays the internal rays neatly)
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(pTop.x, pTop.y);
+        ctx.lineTo(pBL.x, pBL.y);
+        ctx.lineTo(pBR.x, pBR.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Light Source Bulb Indicator
+        ctx.fillStyle = 'white';
+        ctx.shadowColor = incidentColor;
+        ctx.shadowBlur = 15;
+        ctx.beginPath(); ctx.arc(source.x, source.y, 8, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    // Initialize layout
+    resize();
+</script>
+</body>
+</html>
