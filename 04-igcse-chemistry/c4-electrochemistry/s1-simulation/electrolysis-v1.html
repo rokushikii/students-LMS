@@ -2,34 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>3D Electrolysis Cell Simulator - Pro</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #1a1a2e; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #canvas-container { width: 100vw; height: 100vh; display: block; cursor: grab; }
-        #canvas-container:active { cursor: grabbing; }
+        :root {
+            --bg-color: #1a1a2e;
+            --text-color: #fff;
+            --panel-bg: rgba(15, 52, 96, 0.9);
+            --select-bg: #fff;
+            --select-text: #1a1a2e;
+        }
+        body.light-mode {
+            --bg-color: #f0f4f8;
+            --text-color: #1a1a2e;
+            --panel-bg: rgba(255, 255, 255, 0.9);
+            --select-bg: #f0f0f0;
+            --select-text: #1a1a2e;
+        }
+        body { margin: 0; overflow: hidden; background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s; }
+        #canvas-container { width: 100vw; height: 100vh; display: block; touch-action: none; }
         #ui-panel {
-            position: absolute; top: 20px; left: 20px; background: rgba(15, 52, 96, 0.9);
+            position: absolute; top: 60px; left: 20px; background: var(--panel-bg);
             padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            width: 340px; z-index: 10;
+            width: 340px; max-width: 90vw; max-height: 80vh; overflow-y: auto; z-index: 10;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        #ui-panel.minimized {
+            transform: translateY(-120%); opacity: 0; pointer-events: none;
+        }
+        #ui-toggle {
+            position: absolute; top: 15px; left: 20px; z-index: 11;
+            background: #e94560; color: white; border: none; padding: 10px 15px;
+            border-radius: 4px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: 0.2s;
+        }
+        #ui-toggle:hover { background: #ff2a4b; }
+        #theme-toggle {
+            position: absolute; top: 15px; right: 20px; z-index: 11;
+            background: #e94560; color: white; border: none; padding: 10px 15px;
+            border-radius: 4px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: 0.2s;
+        }
+        #theme-toggle:hover { background: #ff2a4b; }
+        @media (max-width: 600px) {
+            #ui-panel { top: 60px; left: 50%; transform: translateX(-50%); width: 90%; }
+            #ui-panel.minimized { transform: translate(-50%, -120%); }
         }
         h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid #e94560; padding-bottom: 10px; }
         .control-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-size: 0.9rem; }
         select, button, input[type="range"] { width: 100%; padding: 8px; border-radius: 4px; border: none; font-family: inherit; }
-        select { background: #fff; color: #1a1a2e; font-weight: bold; cursor: pointer; }
+        select { background: var(--select-bg); color: var(--select-text); font-weight: bold; cursor: pointer; }
         input[type="range"] { padding: 0; cursor: ew-resize; }
         button { background: #e94560; color: #fff; margin-top: 10px; transition: 0.2s; font-weight: bold; cursor: pointer; }
         button:hover { background: #ff2a4b; }
-        #equations { margin-top: 20px; font-family: monospace; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 4px; font-size: 0.85rem; }
+        #equations { margin-top: 20px; font-family: monospace; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 4px; font-size: 0.85rem; }
+        body.light-mode #equations { background: rgba(0,0,0,0.05); }
         .eq-title { color: #e94560; font-weight: bold; margin-bottom: 5px; }
-        .legend { margin-top: 15px; font-size: 0.8rem; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; }
+        .legend { margin-top: 15px; font-size: 0.8rem; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px; }
+        body.light-mode .legend { background: rgba(0,0,0,0.05); }
         .legend-item { display: flex; align-items: center; margin-bottom: 4px; }
         .color-box { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; display: inline-block; }
     </style>
 </head>
 <body>
-
+    <button id="ui-toggle">☰ Settings</button>
+    <button id="theme-toggle">☀️ Light Mode</button>
     <div id="ui-panel">
         <h2>Electrolysis Simulator</h2>
         
@@ -39,6 +77,7 @@
                 <option value="aq_cuso4">Aqueous CuSO4</option>
                 <option value="molten_nacl">Molten NaCl</option>
                 <option value="aq_nacl_conc">Concentrated Aqueous NaCl</option>
+                <option value="aq_nacl_dilute">Dilute Aqueous NaCl</option>
             </select>
         </div>
 
@@ -71,31 +110,30 @@
     <div id="canvas-container"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
         // --- 1. SCENE & CAMERA SETUP ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true }); // Removed alpha: true
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // High-DPI support
+        scene.background = new THREE.Color(0x1a1a2e); // Solid background prevents flashing
         container.appendChild(renderer.domElement);
         
         // Initial Camera Position
         camera.position.set(0, 5, 20);
+        camera.lookAt(0, 2, 0);
 
-        // OrbitControls for Pan/Zoom/Rotate
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.target.set(0, 2, 0);
-
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
+        
+        // Attach light to camera so the electrodes are always properly lit
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(5, 10, 5);
-        scene.add(dirLight);
+        dirLight.position.set(0, 5, 10);
+        camera.add(dirLight);
+        scene.add(camera);
 
         // --- 2. BUILD THE CELL & CIRCUIT ---
         // Beaker & Liquid
@@ -109,7 +147,7 @@
         const liquidTopY = 2.5; // Top surface of the liquid
         const liquid = new THREE.Mesh(
             new THREE.CylinderGeometry(3.1, 3.1, liquidHeight, 32),
-            new THREE.MeshPhongMaterial({ color: 0x0055ff, transparent: true, opacity: 0.6 })
+            new THREE.MeshPhysicalMaterial({ color: 0x0055ff, transparent: true, opacity: 0.15, depthWrite: false, roughness: 0.1, transmission: 0.5 })
         );
         liquid.position.y = -0.5;
         scene.add(liquid);
@@ -168,8 +206,8 @@
 
 
         // Split Electrodes (Top stays static, Bottom swells/dissolves)
-        const electrodeTopGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.5, 16); // Above liquid
-        const electrodeBotGeo = new THREE.CylinderGeometry(0.3, 0.3, 5.5, 16); // Submerged
+        const electrodeTopGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.5, 32); // Above liquid
+        const electrodeBotGeo = new THREE.CylinderGeometry(0.3, 0.3, 5.5, 32); // Submerged
 
         // Anode (-) Left
         const anodeTop = new THREE.Mesh(electrodeTopGeo, new THREE.MeshStandardMaterial({ color: 0xb87333 }));
@@ -190,7 +228,7 @@
         scene.add(cathodeBot);
 
         // Plating Meshes (Attached strictly to bottom portions)
-        const platingGeo = new THREE.CylinderGeometry(0.32, 0.32, 5.5, 16);
+        const platingGeo = new THREE.CylinderGeometry(0.32, 0.32, 5.5, 32);
         
         const anodePlating = new THREE.Mesh(platingGeo, new THREE.MeshStandardMaterial({ color: 0x222222, transparent: true, opacity: 0 }));
         anodeBot.add(anodePlating);
@@ -286,7 +324,7 @@
 
             if (elec === 'molten_nacl') {
                 liquid.material.color.setHex(0xe8d0a9);
-                liquid.material.opacity = 0.8;
+                liquid.material.opacity = 0.3;
                 anodeReaction = "2Cl⁻ ➔ Cl₂ + 2e⁻ (Green gas)";
                 cathodeReaction = "Na⁺ + e⁻ ➔ Na (Silvery liquid layer)";
                 
@@ -297,7 +335,7 @@
             } 
             else if (elec === 'aq_cuso4') {
                 liquid.material.color.setHex(0x0055ff);
-                liquid.material.opacity = 0.6;
+                liquid.material.opacity = 0.15;
                 cathodeReaction = "Cu²⁺ + 2e⁻ ➔ Cu (Pink-brown solid)";
                 cathodePlating.material.color.setHex(colors.plateCu);
 
@@ -315,7 +353,7 @@
             }
             else if (elec === 'aq_nacl_conc') {
                 liquid.material.color.setHex(0xaaaaaa);
-                liquid.material.opacity = 0.3;
+                liquid.material.opacity = 0.1;
                 cathodeReaction = "2H⁺ + 2e⁻ ➔ H₂ (Colorless gas)"; 
                 
                 for(let i=0; i<15; i++) { createIon(true, colors.na); createIon(false, colors.cl); createIon(true, colors.h); }
@@ -325,6 +363,25 @@
 
                 if (type === 'inert') {
                     anodeReaction = "2Cl⁻ ➔ Cl₂ + 2e⁻ (Green gas)";
+                } else {
+                    anodeReaction = "Cu ➔ Cu²⁺ + 2e⁻ (Anode dissolves)";
+                }
+            }
+            else if (elec === 'aq_nacl_dilute') {
+                liquid.material.color.setHex(0xaaaaaa);
+                liquid.material.opacity = 0.1;
+                cathodeReaction = "2H⁺ + 2e⁻ ➔ H₂ (Colorless gas)";
+                
+                for(let i=0; i<8; i++) { createIon(true, colors.na); createIon(false, colors.cl); }
+                for(let i=0; i<15; i++) { createIon(true, colors.h); createIon(false, colors.oh); }
+                
+                legendHTML = `<div class="legend-item"><div class="color-box" style="background:#ff3333;"></div> H⁺ (Discharged Cation)</div>
+                              <div class="legend-item"><div class="color-box" style="background:#ffa500;"></div> OH⁻ (Discharged Anion)</div>
+                              <div class="legend-item"><div class="color-box" style="background:#aaa;"></div> Na⁺ (Spectator Cation)</div>
+                              <div class="legend-item"><div class="color-box" style="background:#33ff33;"></div> Cl⁻ (Spectator Anion)</div>`;
+
+                if (type === 'inert') {
+                    anodeReaction = "4OH⁻ ➔ 2H₂O + O₂ + 4e⁻ (Colorless gas)";
                 } else {
                     anodeReaction = "Cu ➔ Cu²⁺ + 2e⁻ (Anode dissolves)";
                 }
@@ -352,33 +409,50 @@
         // --- 5. ANIMATION LOOP ---
         function animate() {
             requestAnimationFrame(animate);
-            controls.update(); // Required for orbit damping
             const speed = parseFloat(speedSlider.value);
 
             if (isRunning) {
                 // Animate Ions
                 particles.forEach(p => {
                     const targetX = p.isCation ? 1.5 : -1.5; 
-                    p.mesh.position.x += (targetX - p.mesh.position.x) * 0.02 * speed;
+                    const targetZ = 0; // Move towards the electrode's true Z position
                     
-                    // Hit detection
-                    if (Math.abs(p.mesh.position.x - targetX) < 0.35) {
+                    p.mesh.position.x += (targetX - p.mesh.position.x) * 0.02 * speed;
+                    p.mesh.position.z += (targetZ - p.mesh.position.z) * 0.02 * speed;
+                    
+                    const dx = p.mesh.position.x - targetX;
+                    const dz = p.mesh.position.z - targetZ;
+                    const distance = Math.sqrt(dx*dx + dz*dz);
+                    
+                    let hitThreshold = 0.35;
+                    if (p.isCation) {
+                        if (currentConfig.elec === 'aq_cuso4' || currentConfig.elec === 'molten_nacl') {
+                            hitThreshold = 0.32 * cathodePlating.scale.x + 0.05;
+                        }
+                    } else {
+                        if (currentConfig.type === 'active_cu' && currentConfig.elec !== 'molten_nacl') {
+                            hitThreshold = 0.3 * anodeBot.scale.x + 0.05;
+                        }
+                    }
+
+                    // Hit detection using proper 2D distance
+                    if (distance < hitThreshold) {
                         if (p.isCation) {
                             if (currentConfig.elec === 'aq_cuso4' || currentConfig.elec === 'molten_nacl') {
-                                cathodePlating.material.opacity = 1;
-                                if (cathodePlating.scale.x < 1.6) cathodePlating.scale.set(cathodePlating.scale.x + 0.005, 1, cathodePlating.scale.z + 0.005);
-                            } else if (currentConfig.elec === 'aq_nacl_conc' && p.mesh.material.color.getHex() === colors.h) {
+                                cathodePlating.material.opacity = Math.min(1, cathodePlating.material.opacity + 0.1);
+                                if (cathodePlating.scale.x < 1.8) cathodePlating.scale.set(cathodePlating.scale.x + 0.02, 1, cathodePlating.scale.z + 0.02);
+                            } else if ((currentConfig.elec === 'aq_nacl_conc' || currentConfig.elec === 'aq_nacl_dilute') && p.mesh.material.color.getHex() === colors.h) {
                                 if (Math.random() < 0.4) createBubble(1.5, colors.gasH2);
                             }
                         } 
                         else {
                             if (currentConfig.type === 'active_cu' && currentConfig.elec !== 'molten_nacl') {
-                                if (anodeBot.scale.x > 0.3) anodeBot.scale.set(anodeBot.scale.x - 0.005, 1, anodeBot.scale.z - 0.005);
+                                if (anodeBot.scale.x > 0.15) anodeBot.scale.set(anodeBot.scale.x - 0.02, 1, anodeBot.scale.z - 0.02);
                             } else {
                                 if (currentConfig.elec === 'molten_nacl' || (currentConfig.elec === 'aq_nacl_conc' && currentConfig.type === 'inert')) {
                                     if (p.mesh.material.color.getHex() === colors.cl && Math.random() < 0.4) createBubble(-1.5, colors.gasCl2);
-                                } else if (currentConfig.elec === 'aq_cuso4' && currentConfig.type === 'inert') {
-                                    if (Math.random() < 0.4) createBubble(-1.5, colors.gasO2);
+                                } else if ((currentConfig.elec === 'aq_cuso4' || currentConfig.elec === 'aq_nacl_dilute') && currentConfig.type === 'inert') {
+                                    if (p.mesh.material.color.getHex() === colors.oh && Math.random() < 0.4) createBubble(-1.5, colors.gasO2);
                                 }
                             }
                         }
@@ -408,6 +482,28 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // UI Toggle Logic
+        const uiPanel = document.getElementById('ui-panel');
+        const uiToggle = document.getElementById('ui-toggle');
+        uiToggle.addEventListener('click', () => {
+            uiPanel.classList.toggle('minimized');
+        });
+        
+        // Auto-minimize on mobile to show the simulation clearly initially
+        if (window.innerWidth <= 600) {
+            uiPanel.classList.add('minimized');
+        }
+
+        // Theme Toggle Logic
+        let isLightMode = false;
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            isLightMode = !isLightMode;
+            document.body.classList.toggle('light-mode');
+            themeToggle.innerText = isLightMode ? "🌙 Dark Mode" : "☀️ Light Mode";
+            scene.background = new THREE.Color(isLightMode ? 0xf0f4f8 : 0x1a1a2e);
         });
 
         resetElectrodes();
