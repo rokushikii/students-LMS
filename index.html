@@ -225,6 +225,202 @@
             gap: 20px;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* --- Subjects Directory Section --- */
+        .subjects-container {
+            max-width: 1100px;
+            margin: 60px auto 100px auto;
+            padding: 0 20px;
+        }
+
+        .directory-title {
+            text-align: center;
+            font-size: 32px;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        .directory-subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 16px;
+            margin-bottom: 50px;
+        }
+
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .subject-card {
+            background: var(--white);
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+        }
+
+        .subject-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+        }
+
+        .subject-card.fade-out {
+            opacity: 0.2;
+            transform: scale(0.97);
+        }
+
+        .subject-header {
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--white);
+        }
+
+        .subject-icon {
+            font-size: 28px;
+        }
+
+        .subject-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        /* Theming classes */
+        .math-theme .subject-header { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .add-math-theme .subject-header { background: linear-gradient(135deg, #ec4899, #be185d); }
+        .physics-theme .subject-header { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .biology-theme .subject-header { background: linear-gradient(135deg, #10b981, #047857); }
+        .chemistry-theme .subject-header { background: linear-gradient(135deg, #059669, #065f46); }
+        .combined-science-theme .subject-header { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+
+        .subject-body {
+            padding: 24px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .subject-desc {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0 0 20px 0;
+        }
+
+        .chapter-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .chapter-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 8px;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .chapter-link:hover {
+            background-color: var(--white);
+            color: var(--primary-purple);
+            border-color: var(--border-light);
+            transform: translateX(3px);
+        }
+
+        .sim-badge {
+            background-color: #f3e8ff;
+            color: var(--primary-purple);
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .empty-notice-card {
+            display: block;
+            padding: 16px;
+            border-radius: 8px;
+            background-color: var(--bg-light);
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            text-align: center;
+            font-style: italic;
+            border: 1px dashed var(--border-light);
+        }
+
+        .subject-footer-btn {
+            display: block;
+            text-align: center;
+            padding: 14px;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            border-top: 1px solid var(--border-light);
+            transition: all 0.2s ease;
+        }
+
+        .subject-footer-btn:hover {
+            background-color: var(--primary-purple);
+            color: var(--white);
+        }
+
+        /* Search highlights and no-results styles */
+        .chapter-link.highlight {
+            background-color: #faf5ff;
+            border-color: #c084fc;
+            box-shadow: 0 0 8px rgba(107, 70, 193, 0.15);
+        }
+
+        .no-results-box {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--white);
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            margin-top: 20px;
+        }
+
+        .no-results-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .no-results-box h3 {
+            margin: 0 0 10px 0;
+            color: var(--text-main);
+            font-size: 20px;
+        }
+
+        .no-results-box p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
     </style>
 </head>
 <body>
@@ -238,16 +434,16 @@
                 <div class="dropdown-content">
                     
                     <div class="sub-dropdown">
-                        <a href="#">IGCSE Math <span>⏵</span></a>
+                        <a href="00-igcse-math/index.html">IGCSE Math <span>⏵</span></a>
                         <div class="sub-dropdown-content">
-                            <a href="#" class="empty-notice">Content in development...</a>
+                            <a href="00-igcse-math/index.html" class="empty-notice">Content in development...</a>
                         </div>
                     </div>
 
                     <div class="sub-dropdown">
-                        <a href="#">IGCSE Add Math <span>⏵</span></a>
+                        <a href="01-igcse-add-math/index.html">IGCSE Add Math <span>⏵</span></a>
                         <div class="sub-dropdown-content">
-                            <a href="#" class="empty-notice">Content in development...</a>
+                            <a href="01-igcse-add-math/index.html" class="empty-notice">Content in development...</a>
                         </div>
                     </div>
 
@@ -264,6 +460,13 @@
                     </div>
 
                     <div class="sub-dropdown">
+                        <a href="03-igcse-biology/index.html">IGCSE Biology <span>⏵</span></a>
+                        <div class="sub-dropdown-content">
+                            <a href="03-igcse-biology/index.html" class="empty-notice">Content in development...</a>
+                        </div>
+                    </div>
+
+                    <div class="sub-dropdown">
                         <a href="04-igcse-chemistry/index.html">IGCSE Chemistry <span>⏵</span></a>
                         <div class="sub-dropdown-content">
                             <a href="04-igcse-chemistry/c1-exp-technique-and-separation/index.html">1. Exp. Technique & Separation</a>
@@ -275,14 +478,19 @@
                         </div>
                     </div>
 
+                    <div class="sub-dropdown">
+                        <a href="05-igcse-combined-science/index.html">IGCSE Combined Science <span>⏵</span></a>
+                        <div class="sub-dropdown-content">
+                            <a href="05-igcse-combined-science/index.html" class="empty-notice">Content in development...</a>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
 
         <div class="nav-right">
-            <input type="text" class="search-bar" placeholder="Search for a subject...">
-            <button class="btn-login">Log in</button>
-            <a href="#" class="btn-primary">Join now for free</a>
+            <input type="text" class="search-bar" placeholder="Search for a subject or topic...">
         </div>
     </nav>
 
@@ -291,10 +499,237 @@
         <p>Join Orient Academy's ultimate digital tool. Streamline your learning with 3D models, interactive graphs, and exam-specific resources that guarantee technical fluency.</p>
         
         <div class="hero-buttons">
-            <a href="#" class="btn-primary">Explore Simulations</a>
-            <a href="#" class="btn-secondary">I'm a student</a>
+            <a href="#subjects-directory" class="btn-primary">Explore Simulations</a>
         </div>
     </div>
+
+    <!-- Subjects Directory Section -->
+    <div id="subjects-directory" class="subjects-container">
+        <h2 class="directory-title">Explore Our Subjects</h2>
+        <p class="directory-subtitle">Select a subject or click on a chapter below to access premium interactive simulations.</p>
+        
+        <div class="subject-grid">
+            <!-- 00-igcse-math -->
+            <div class="subject-card math-theme" data-subject="math">
+                <div class="subject-header">
+                    <div class="subject-icon">📐</div>
+                    <h3>IGCSE Math</h3>
+                </div>
+                <div class="subject-body">
+                    <p class="subject-desc">Master coordinate geometry, algebra, and advanced calculus concepts visually.</p>
+                    <div class="chapter-list">
+                        <a href="00-igcse-math/index.html" class="empty-notice-card">Content in development...</a>
+                    </div>
+                </div>
+                <a href="00-igcse-math/index.html" class="subject-footer-btn">Enter Mathematics</a>
+            </div>
+
+            <!-- 01-igcse-add-math -->
+            <div class="subject-card add-math-theme" data-subject="add-math">
+                <div class="subject-header">
+                    <div class="subject-icon">📈</div>
+                    <h3>IGCSE Add Math</h3>
+                </div>
+                <div class="subject-body">
+                    <p class="subject-desc">Deep-dive into matrices, advanced trigonometry, vectors, and complex functions.</p>
+                    <div class="chapter-list">
+                        <a href="01-igcse-add-math/index.html" class="empty-notice-card">Content in development...</a>
+                    </div>
+                </div>
+                <a href="01-igcse-add-math/index.html" class="subject-footer-btn">Enter Add Math</a>
+            </div>
+
+            <!-- 02-igcse-physics -->
+            <div class="subject-card physics-theme" data-subject="physics">
+                <div class="subject-header">
+                    <div class="subject-icon">🍎</div>
+                    <h3>IGCSE Physics</h3>
+                </div>
+                <div class="subject-body">
+                    <p class="subject-desc">Interactive physics labs spanning wave mechanics, circuits, space, and mechanics.</p>
+                    <div class="chapter-list">
+                        <a href="02-igcse-physics/c1-general-physics/index.html" class="chapter-link">1. General Physics</a>
+                        <a href="02-igcse-physics/c2-thermal-physics/index.html" class="chapter-link">2. Thermal Physics</a>
+                        <a href="02-igcse-physics/c3-waves-light-sound/index.html" class="chapter-link">3. Waves, Light & Sound <span class="sim-badge">5 Sims</span></a>
+                        <a href="02-igcse-physics/c4-electricity-magnetism/index.html" class="chapter-link">4. Electricity & Magnetism <span class="sim-badge">2 Sims</span></a>
+                        <a href="02-igcse-physics/c5-nuclear-physics/index.html" class="chapter-link">5. Nuclear Physics</a>
+                        <a href="02-igcse-physics/c6-space-physics/index.html" class="chapter-link">6. Space Physics</a>
+                    </div>
+                </div>
+                <a href="02-igcse-physics/index.html" class="subject-footer-btn">Enter Physics Portal</a>
+            </div>
+
+            <!-- 03-igcse-biology -->
+            <div class="subject-card biology-theme" data-subject="biology">
+                <div class="subject-header">
+                    <div class="subject-icon">🌿</div>
+                    <h3>IGCSE Biology</h3>
+                </div>
+                <div class="subject-body">
+                    <p class="subject-desc">Visualize cell structure, ecosystems, genetics, and physiological biological processes.</p>
+                    <div class="chapter-list">
+                        <a href="03-igcse-biology/index.html" class="empty-notice-card">Content in development...</a>
+                    </div>
+                </div>
+                <a href="03-igcse-biology/index.html" class="subject-footer-btn">Enter Biology</a>
+            </div>
+
+            <!-- 04-igcse-chemistry -->
+            <div class="subject-card chemistry-theme" data-subject="chemistry">
+                <div class="subject-header">
+                    <div class="subject-icon">🧪</div>
+                    <h3>IGCSE Chemistry</h3>
+                </div>
+                <div class="subject-body">
+                    <p class="subject-desc">Interact with particle diagrams, periodic tables, dynamic electrolysis, and chemical equations.</p>
+                    <div class="chapter-list">
+                        <a href="04-igcse-chemistry/c1-exp-technique-and-separation/index.html" class="chapter-link">1. Exp. Technique & Separation</a>
+                        <a href="04-igcse-chemistry/c2-acid-bases-salt/index.html" class="chapter-link">2. Acids, Bases & Salts</a>
+                        <a href="04-igcse-chemistry/c3-rate-of-reaction/index.html" class="chapter-link">3. Rate of Reaction</a>
+                        <a href="04-igcse-chemistry/c4-electrochemistry/index.html" class="chapter-link">4. Electrochemistry <span class="sim-badge">1 Sim</span></a>
+                        <a href="04-igcse-chemistry/c5-chemical-energetics/index.html" class="chapter-link">5. Chemical Energetics</a>
+                        <a href="04-igcse-chemistry/c6-organic-chemistry/index.html" class="chapter-link">6. Organic Chemistry</a>
+                    </div>
+                </div>
+                <a href="04-igcse-chemistry/index.html" class="subject-footer-btn">Enter Chemistry Portal</a>
+            </div>
+
+            <!-- 05-igcse-combined-science -->
+            <div class="subject-card combined-science-theme" data-subject="combined-science">
+                <div class="subject-header">
+                    <div class="subject-icon">🧬</div>
+                    <h3>IGCSE Combined Science</h3>
+                </div>
+                <div class="subject-body">
+                    <p class="subject-desc">Comprehensive interdisciplinary resources combining core physical and chemical models.</p>
+                    <div class="chapter-list">
+                        <a href="05-igcse-combined-science/index.html" class="empty-notice-card">Content in development...</a>
+                    </div>
+                </div>
+                <a href="05-igcse-combined-science/index.html" class="subject-footer-btn">Enter Combined Science</a>
+            </div>
+        </div>
+
+        <!-- No Results Search Placeholder -->
+        <div id="search-no-results" class="no-results-box" style="display: none;">
+            <div class="no-results-icon">🔍</div>
+            <h3>No matching subjects or chapters found</h3>
+            <p>Try searching for "Physics", "Math", "Electricity", or "Electrochemistry"</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.querySelector('.search-bar');
+            const exploreBtn = document.querySelector('.btn-primary[href="#subjects-directory"]');
+            const subjectCards = document.querySelectorAll('.subject-card');
+            const subjectGrid = document.querySelector('.subject-grid');
+            const noResultsBox = document.getElementById('search-no-results');
+
+            // 1. Smooth scroll for Explore Simulations button
+            if (exploreBtn) {
+                exploreBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const target = document.querySelector('#subjects-directory');
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            }
+
+            // 2. Real-time Search Handler
+            let scrolled = false;
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase().trim();
+
+                    // Smooth scroll to directory on first character typing
+                    if (query.length > 0 && !scrolled) {
+                        const target = document.querySelector('#subjects-directory');
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            scrolled = true;
+                        }
+                    } else if (query.length === 0) {
+                        scrolled = false;
+                    }
+
+                    if (query === '') {
+                        // Reset everything
+                        subjectCards.forEach(card => {
+                            card.style.display = 'flex';
+                            card.classList.remove('fade-out');
+                            
+                            // Reset chapters
+                            const chapters = card.querySelectorAll('.chapter-link');
+                            chapters.forEach(ch => {
+                                ch.style.display = 'flex';
+                                ch.classList.remove('highlight');
+                            });
+                        });
+                        subjectGrid.style.display = 'grid';
+                        noResultsBox.style.display = 'none';
+                        return;
+                    }
+
+                    let anyMatches = false;
+
+                    subjectCards.forEach(card => {
+                        const subjectName = card.querySelector('h3').textContent.toLowerCase();
+                        const subjectDesc = card.querySelector('.subject-desc').textContent.toLowerCase();
+                        
+                        // Check if subject card matches overall
+                        const subjectMatches = subjectName.includes(query) || subjectDesc.includes(query);
+                        
+                        const chapters = card.querySelectorAll('.chapter-link');
+                        let chapterMatchesCount = 0;
+
+                        chapters.forEach(ch => {
+                            const chText = ch.textContent.toLowerCase();
+                            const chMatches = chText.includes(query);
+
+                            if (chMatches) {
+                                ch.style.display = 'flex';
+                                ch.classList.add('highlight');
+                                chapterMatchesCount++;
+                            } else {
+                                // If subject itself matches, keep chapters visible but not highlighted
+                                if (subjectMatches) {
+                                    ch.style.display = 'flex';
+                                    ch.classList.remove('highlight');
+                                } else {
+                                    ch.style.display = 'none';
+                                }
+                            }
+                        });
+
+                        const emptyNotice = card.querySelector('.empty-notice-card');
+                        let emptyNoticeMatches = false;
+                        if (emptyNotice) {
+                            emptyNoticeMatches = subjectMatches;
+                        }
+
+                        // Card matches if subject matches, or at least one chapter matches
+                        if (subjectMatches || chapterMatchesCount > 0) {
+                            card.style.display = 'flex';
+                            card.classList.remove('fade-out');
+                            anyMatches = true;
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+
+                    if (anyMatches) {
+                        subjectGrid.style.display = 'grid';
+                        noResultsBox.style.display = 'none';
+                    } else {
+                        subjectGrid.style.display = 'none';
+                        noResultsBox.style.display = 'block';
+                    }
+                });
+            }
+        });
+    </script>
 
 </body>
 </html>
