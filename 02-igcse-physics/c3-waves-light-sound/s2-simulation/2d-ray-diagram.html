@@ -198,8 +198,9 @@
 
         curve = new THREE.CatmullRomCurve3(controlPoints);
         
-        const coreGeo = new THREE.TubeGeometry(curve, 100, 2.0, 16, false);
-        const cladGeo = new THREE.TubeGeometry(curve, 100, 2.8, 16, false);
+        // Upgraded to 64 segments for ultra-smooth cylindrical normals!
+        const coreGeo = new THREE.TubeGeometry(curve, 100, 2.0, 64, false);
+        const cladGeo = new THREE.TubeGeometry(curve, 100, 2.8, 64, false);
 
         coreMesh = new THREE.Mesh(coreGeo, coreMaterial);
         cladMesh = new THREE.Mesh(cladGeo, cladMaterial);
@@ -232,7 +233,6 @@
         
         const rayColors = [0xef4444, 0xf59e0b, 0x10b981, 0x8b5cf6, 0xec4899];
         
-        // Setup multiple rays if selected
         let origins = [];
         let dirs = [];
         
@@ -240,7 +240,6 @@
             origins.push(startPt.clone());
             dirs.push(initialTangent.clone());
         } else {
-            // Create a small spread of rays
             const up = new THREE.Vector3(0, 1, 0);
             const right = new THREE.Vector3().crossVectors(initialTangent, up).normalize();
             const realUp = new THREE.Vector3().crossVectors(right, initialTangent).normalize();
@@ -248,11 +247,10 @@
             for (let i = 0; i < 5; i++) {
                 const angle = (i / 5) * Math.PI * 2;
                 const offset = right.clone().multiplyScalar(Math.cos(angle)).add(realUp.clone().multiplyScalar(Math.sin(angle)));
-                origins.push(startPt.clone().add(offset.multiplyScalar(0.8))); // Offset origin
                 
-                // Angle them slightly inwards
-                const dir = initialTangent.clone().add(offset.multiplyScalar(-0.05)).normalize();
-                dirs.push(dir);
+                // Spawn a tighter bundle, and make them travel PERFECTLY parallel
+                origins.push(startPt.clone().add(offset.multiplyScalar(0.6))); 
+                dirs.push(initialTangent.clone()); 
             }
         }
 
@@ -267,29 +265,24 @@
             while (bounces < maxBounces) {
                 raycaster.set(currentOrigin, currentDir);
                 
-                // Raycast against the invisible BackSide mesh to perfectly detect internal hits
                 const intersects = raycaster.intersectObject(raycastMesh);
 
                 if (intersects.length > 0) {
                     const hit = intersects[0];
                     
-                    // Prevent self-intersection at the exact same point
                     if (hit.distance < 0.1) {
                         currentOrigin.add(currentDir.clone().multiplyScalar(0.15));
                         continue; 
                     }
 
-                    // The normal points OUT of the mesh. We need it pointing IN for physics.
                     const inwardNormal = hit.face.normal.clone().transformDirection(raycastMesh.matrixWorld).normalize().negate();
                     
-                    // Draw ray segment
                     const lineMat = new THREE.LineBasicMaterial({ color: color, linewidth: 2 });
                     const lineGeo = new THREE.BufferGeometry().setFromPoints([currentOrigin, hit.point]);
                     rayGroup.add(new THREE.Line(lineGeo, lineMat));
 
-                    // Add Arrow
                     const arrowDir = currentDir.clone();
-                    const arrowLen = Math.min(hit.distance, 4); // Scale arrow to fit segment
+                    const arrowLen = Math.min(hit.distance, 4); 
                     if (hit.distance > 2) {
                         const arrow = new THREE.ArrowHelper(arrowDir, currentOrigin.clone().add(arrowDir.clone().multiplyScalar(hit.distance/2 - arrowLen/2)), arrowLen, color, 1.2, 0.8);
                         rayGroup.add(arrow);
@@ -298,32 +291,28 @@
                     // Physics: Check TIR
                     const angleIncidence = currentDir.clone().negate().angleTo(inwardNormal);
                     
-                    let criticalAngle = Math.PI; // Default to impossible if n2 > n1
+                    let criticalAngle = Math.PI; 
                     if (n_clad < n_core) {
                         criticalAngle = Math.asin(n_clad / n_core);
                     }
 
-                    if (angleIncidence > criticalAngle) {
-                        // Total Internal Reflection
+                    // Epsilon applied to account for tiny floating point errors on smooth cylinders
+                    if (angleIncidence >= criticalAngle - 0.0001) {
                         currentDir = currentDir.clone().reflect(inwardNormal).normalize();
-                        currentOrigin = hit.point.clone().add(currentDir.clone().multiplyScalar(0.05)); // Offset slightly to prevent sticking
+                        currentOrigin = hit.point.clone().add(currentDir.clone().multiplyScalar(0.05)); 
                     } else {
-                        // Refraction (Escapes the fiber)
                         const ratio = n_core / n_clad;
-                        const exitDir = refractVector(currentDir, inwardNormal, ratio) || currentDir.clone(); // Fallback if math gets weird
+                        const exitDir = refractVector(currentDir, inwardNormal, ratio) || currentDir.clone();
                         
-                        // Draw escaping ray
                         const escapeEnd = hit.point.clone().add(exitDir.multiplyScalar(10));
                         const escapeLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([hit.point, escapeEnd]), new THREE.LineBasicMaterial({ color: 0xef4444 }));
                         rayGroup.add(escapeLine);
                         
-                        // Escaping arrow
                         rayGroup.add(new THREE.ArrowHelper(exitDir.clone().normalize(), hit.point, 4, 0xef4444, 1.2, 0.8));
                         
-                        break; // Ray is gone
+                        break; 
                     }
                 } else {
-                    // Ray reached the end of the tube without hitting walls
                     const endPt = currentOrigin.clone().add(currentDir.multiplyScalar(20));
                     const endLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([currentOrigin, endPt]), new THREE.LineBasicMaterial({ color: color }));
                     rayGroup.add(endLine);
@@ -356,7 +345,6 @@
             isDragging = true;
             activeHandle = intersects[0].object;
             
-            // Orient invisible drag plane to face camera at the handle's position
             dragPlane.position.copy(activeHandle.position);
             dragPlane.quaternion.copy(camera.quaternion);
         }
@@ -421,15 +409,14 @@
         e.target.innerText = isLightMode ? "🌙 Dark Mode" : "☀️ Light Mode";
         scene.background.set(isLightMode ? '#f8fafc' : '#0f172a');
         
-        // Dynamically adjust cladding material for visibility
         if (isLightMode) {
-            cladMaterial.color.setHex(0x64748b); // Darker slate grey
+            cladMaterial.color.setHex(0x64748b);
             cladMaterial.opacity = 0.5;
-            cladMaterial.transmission = 0.2; // Less glassy, more solid
+            cladMaterial.transmission = 0.2; 
         } else {
-            cladMaterial.color.setHex(0xffffff); // Bright white
+            cladMaterial.color.setHex(0xffffff); 
             cladMaterial.opacity = 0.25;
-            cladMaterial.transmission = 0.6; // More glassy
+            cladMaterial.transmission = 0.6; 
         }
     });
 
@@ -444,7 +431,7 @@
 
     function animate() {
         requestAnimationFrame(animate);
-        traceLight(); // Recalculate physics every frame so it reacts to dragging instantly
+        traceLight(); 
         controls.update();
         renderer.render(scene, camera);
     }
