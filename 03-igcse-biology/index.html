@@ -7,22 +7,19 @@
     <style>
         :root {
             --primary-purple: #6b46c1;
+            --primary-hover: #553c9a;
             --text-main: #1e293b;
             --text-muted: #64748b;
             --bg-light: #f8fafc;
             --white: #ffffff;
             --border-light: #e2e8f0;
-            --bio-accent: #10b981; /* Green for Biology */
-            --bio-accent-light: #d1fae5;
+            --bio-accent: #10b981; /* Green for biology */
         }
 
         body, html {
             margin: 0; padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-light); color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
         }
 
         .navbar {
@@ -35,96 +32,43 @@
         .back-link { color: var(--text-muted); text-decoration: none; font-weight: 500; transition: 0.2s; }
         .back-link:hover { color: var(--primary-purple); }
 
-        .container { 
-            max-width: 1000px; 
-            margin: 40px auto; 
-            padding: 0 20px; 
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
         
-        .header { margin-bottom: 30px; border-bottom: 2px solid var(--border-light); padding-bottom: 20px; }
-        .header h1 { font-size: 36px; margin: 0 0 10px 0; display: flex; align-items: center; gap: 12px; }
+        .header { margin-bottom: 40px; border-bottom: 2px solid var(--border-light); padding-bottom: 20px; }
+        .header h1 { font-size: 36px; margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px; }
         .header p { font-size: 18px; color: var(--text-muted); margin: 0; }
 
-        /* Premium Placeholder View */
-        .placeholder-card {
-            background: var(--white);
-            border-radius: 20px;
-            border: 1px solid var(--border-light);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-            padding: 60px 40px;
-            text-align: center;
-            margin: auto;
-            max-width: 550px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.3s ease;
+        /* The Dashboard Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
+
+        .card {
+            background: var(--white); border-radius: 12px; padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border-light);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex; flex-direction: column;
         }
 
-        .placeholder-card:hover {
-            transform: translateY(-3px);
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+        
+        .card-tag { 
+            align-self: flex-start; background: #d1fae5; color: #047857;
+            padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 15px; 
         }
 
-        .icon-container {
-            width: 130px;
-            height: 130px;
-            background-color: var(--bio-accent-light);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 30px;
-            animation: pulse 2.5s infinite ease-in-out;
-        }
+        .card h3 { margin: 0 0 10px 0; font-size: 20px; }
+        .card p { color: var(--text-muted); font-size: 14px; margin: 0 0 20px 0; line-height: 1.5; flex-grow: 1; }
 
-        .icon-svg {
-            width: 70px;
-            height: 70px;
-            fill: var(--bio-accent);
+        .btn-launch {
+            background-color: var(--bio-accent); color: white; text-align: center;
+            padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-
-        .placeholder-card h2 {
-            font-size: 24px;
-            color: var(--text-main);
-            margin: 0 0 15px 0;
-            font-weight: 700;
+        .btn-launch:hover { background-color: #059669; }
+        
+        .btn-disabled {
+            background-color: #e2e8f0; color: #94a3b8; cursor: not-allowed;
         }
-
-        .placeholder-card p {
-            font-size: 15px;
-            color: var(--text-muted);
-            line-height: 1.6;
-            margin: 0 0 35px 0;
-            max-width: 450px;
-        }
-
-        .btn-action {
-            background-color: var(--bio-accent);
-            color: var(--white);
-            padding: 12px 32px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 15px;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
-            transition: all 0.2s ease;
-        }
-
-        .btn-action:hover {
-            background-color: #047857;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); }
-            50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
+        .btn-disabled:hover { background-color: #e2e8f0; }
     </style>
 </head>
 <body>
@@ -137,19 +81,30 @@
     <div class="container">
         <div class="header">
             <h1>🌿 IGCSE Biology</h1>
-            <p>Interactive simulations and experiments.</p>
+            <p>Interactive simulations, 3D models, and biological experiments.</p>
         </div>
 
-        <div class="placeholder-card">
-            <div class="icon-container">
-                <!-- Biology Leaf / Eco Icon -->
-                <svg class="icon-svg" viewBox="0 0 24 24">
-                    <path d="M17 8C8 10 5.9 16.17 6 20c3.83.1 10-2 12-11V4h-1v4zm-5 12c-.08-2.69 1.05-6.53 5-8.5-3.97 1.97-5.08 5.81-5 8.5z"/>
-                </svg>
+        <div class="grid">
+            <div class="card">
+                <span class="card-tag">Ch 2 & 3: Cells & Transport</span>
+                <h3>3D Interactive Cell Explorer</h3>
+                <p>Explore Plant and Animal cell ultrastructure in 3D. Isolate organelles to view dynamic cross-sections, metabolic functions, and their roles in cell transport.</p>
+                <a href="02-cells/index.html" class="btn-launch">Launch 3D Explorer 🔬</a>
             </div>
-            <h2>Content in development..</h2>
-            <p>We are currently designing visual assets, interactive cell structures, genetic builders, and ecosystems diagrams for the IGCSE Biology syllabus. Check back soon!</p>
-            <a href="../index.html#subjects-directory" class="btn-action">Explore Other Subjects</a>
+
+            <div class="card">
+                <span class="card-tag">Ch 1: Characteristics of Life</span>
+                <h3>MRS GREN Interactive</h3>
+                <p>Virtual scenarios demonstrating the 7 characteristics of living organisms.</p>
+                <a href="#" class="btn-launch btn-disabled">In Development</a>
+            </div>
+            
+            <div class="card">
+                <span class="card-tag">Ch 4: Biological Molecules</span>
+                <h3>Food Tests Simulator</h3>
+                <p>Virtual lab for Benedict's, Biuret, Iodine, and Emulsion tests.</p>
+                <a href="#" class="btn-launch btn-disabled">In Development</a>
+            </div>
         </div>
     </div>
 

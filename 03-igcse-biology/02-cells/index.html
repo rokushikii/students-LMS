@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Interactive Cell Explorer | IGCSE Biology</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js Library and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.85);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+        }
+
+        #app-container {
+            display: flex;
+            width: 100%; height: 100%;
+            flex-direction: column;
+        }
+
+        @media (min-width: 900px) {
+            #app-container { flex-direction: row; }
+        }
+
+        /* 3D Canvas Area */
+        #simulation-container {
+            flex: 1;
+            position: relative;
+            min-height: 50vh;
+        }
+
+        #canvas-3d {
+            width: 100%; height: 100%; display: block;
+        }
+
+        /* Overlays on 3D Canvas */
+        .overlay-controls {
+            position: absolute;
+            bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; gap: 10px;
+            background: rgba(15, 23, 42, 0.7);
+            padding: 10px 20px;
+            border-radius: 30px;
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--panel-border);
+            z-index: 10;
+        }
+
+        .toggle-btn {
+            background: transparent; color: var(--text-muted);
+            border: none; padding: 8px 16px; border-radius: 20px;
+            font-weight: 600; cursor: pointer; transition: 0.3s;
+        }
+
+        .toggle-btn.active.plant { background: var(--accent-green); color: white; }
+        .toggle-btn.active.animal { background: var(--accent-blue); color: white; }
+        .toggle-btn:hover:not(.active) { color: white; }
+
+        .top-left-controls {
+            position: absolute; top: 20px; left: 20px;
+            display: flex; flex-direction: column; gap: 15px;
+            background: rgba(15, 23, 42, 0.7);
+            padding: 15px; border-radius: 12px;
+            backdrop-filter: blur(8px); border: 1px solid var(--panel-border);
+            width: 250px;
+        }
+
+        .slider-group { display: flex; flex-direction: column; gap: 5px; }
+        .slider-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; justify-content: space-between; }
+        
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; height: 4px;
+            background: rgba(255,255,255,0.2); border-radius: 2px; outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 14px; height: 14px;
+            border-radius: 50%; background: var(--text-main); cursor: pointer;
+        }
+
+        .back-nav {
+            position: absolute; top: 20px; right: 20px;
+            text-decoration: none; color: white; font-weight: bold;
+            background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 8px;
+            backdrop-filter: blur(4px); transition: 0.2s; z-index: 20;
+        }
+        .back-nav:hover { background: rgba(255,255,255,0.2); }
+
+        /* Right UI Panel */
+        #ui-panel {
+            width: 100%;
+            background-color: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border-left: 1px solid var(--panel-border);
+            display: flex; flex-direction: column;
+            overflow-y: auto;
+            box-shadow: -5px 0 25px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        @media (min-width: 900px) {
+            #ui-panel { width: 420px; }
+        }
+
+        .panel-header {
+            padding: 25px; border-bottom: 1px solid var(--panel-border);
+        }
+        .panel-header h1 { margin: 0 0 5px 0; font-size: 24px; }
+        .panel-header p { margin: 0; font-size: 14px; color: var(--text-muted); }
+
+        .panel-content { padding: 25px; flex-grow: 1; }
+
+        /* Organelle Info Card */
+        #organelle-info { display: none; }
+        #default-view { display: block; }
+
+        .badge {
+            display: inline-block; padding: 4px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }
+        .badge.organelle { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3); }
+
+        .info-title { font-size: 28px; margin: 0 0 10px 0; color: white; }
+        
+        .section-title {
+            font-size: 14px; font-weight: 600; color: var(--text-muted);
+            margin: 25px 0 10px 0; border-bottom: 1px solid var(--panel-border); padding-bottom: 5px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .info-text { font-size: 14px; line-height: 1.6; color: #cbd5e1; margin: 0; }
+        
+        .transport-box {
+            background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px; padding: 15px; margin-top: 15px;
+        }
+        .transport-box h4 { margin: 0 0 8px 0; color: #93c5fd; font-size: 14px; }
+        .transport-box p { margin: 0; font-size: 13px; color: #cbd5e1; line-height: 1.5; }
+
+        .btn-action {
+            width: 100%; padding: 12px; border-radius: 8px; border: none;
+            background: rgba(255,255,255,0.1); color: white; font-weight: 600;
+            cursor: pointer; transition: 0.2s; margin-top: 20px;
+        }
+        .btn-action:hover { background: rgba(255,255,255,0.2); }
+        .btn-action.reset { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .btn-action.reset:hover { background: rgba(239, 68, 68, 0.3); }
+
+        /* Comparison Table */
+        .comparison-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        .comparison-table th { background: rgba(255,255,255,0.05); padding: 10px; text-align: left; color: white; font-weight: 600; border-bottom: 1px solid var(--panel-border); }
+        .comparison-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #cbd5e1; }
+        
+        /* Interactive Organelle List */
+        .organelle-list { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
+        .organelle-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 15px; background: rgba(0,0,0,0.2); border-radius: 8px;
+            cursor: pointer; transition: 0.2s; border: 1px solid transparent;
+        }
+        .organelle-item:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); transform: translateX(3px); }
+        .organelle-name { font-weight: 500; font-size: 14px; }
+        .organelle-indicator { width: 10px; height: 10px; border-radius: 50%; }
+
+        /* Loader */
+        #loader {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark); display: flex; justify-content: center; align-items: center;
+            z-index: 100; transition: opacity 0.5s; color: white; font-size: 20px; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="loader">Generating Cellular Ultrastructure...</div>
+
+<div id="app-container">
+    
+    <div id="simulation-container">
+        <a href="../index.html" class="back-nav">← Exit Simulator</a>
+        
+        <canvas id="canvas-3d"></canvas>
+        
+        <div class="top-left-controls">
+            <div class="slider-group">
+                <label><span>Membrane Opacity (X-Ray)</span> <span id="val-opacity">100%</span></label>
+                <input type="range" id="slider-opacity" min="0" max="1" step="0.01" value="0.3">
+            </div>
+            <div class="slider-group">
+                <label><span>Exploded View</span> <span id="val-explode">0%</span></label>
+                <input type="range" id="slider-explode" min="0" max="10" step="0.1" value="0">
+            </div>
+        </div>
+
+        <div class="overlay-controls">
+            <button class="toggle-btn plant active" id="btn-plant">Plant Cell</button>
+            <button class="toggle-btn animal" id="btn-animal">Animal Cell</button>
+        </div>
+    </div>
+
+    <div id="ui-panel">
+        <div class="panel-header">
+            <h1>Cell Explorer</h1>
+            <p>Interactive 3D Ultrastructure & Transport</p>
+        </div>
+
+        <div class="panel-content">
+            <!-- Default View -->
+            <div id="default-view">
+                <h3 style="margin-top:0;">Select an organelle</h3>
+                <p class="info-text">Click on any structure in the 3D canvas or select from the list below to isolate it, view its cross-section, and study its metabolic function.</p>
+                
+                <div class="organelle-list" id="quick-list">
+                    <!-- Populated by JS based on cell type -->
+                </div>
+
+                <h3 style="margin-top: 30px;">Key Differences</h3>
+                <table class="comparison-table">
+                    <tr><th>Feature</th><th>Plant Cell</th><th>Animal Cell</th></tr>
+                    <tr><td>Cell Wall</td><td>Present (Cellulose)</td><td>Absent</td></tr>
+                    <tr><td>Chloroplasts</td><td>Present</td><td>Absent</td></tr>
+                    <tr><td>Vacuole</td><td>Large, central</td><td>Small, temporary (if any)</td></tr>
+                    <tr><td>Shape</td><td>Fixed, rectangular</td><td>Irregular, flexible</td></tr>
+                </table>
+            </div>
+
+            <!-- Organelle Info View -->
+            <div id="organelle-info">
+                <span class="badge organelle">Organelle Focus</span>
+                <h2 class="info-title" id="info-name">Mitochondrion</h2>
+                <p class="info-text" id="info-desc">Description goes here.</p>
+
+                <div class="section-title">🔬 Structural Cross-Section</div>
+                <p class="info-text" id="info-structure">Structure details.</p>
+
+                <div class="section-title">⚡ Metabolic Function</div>
+                <p class="info-text" id="info-metabolism">Metabolism details.</p>
+
+                <div class="transport-box">
+                    <h4>🔄 Movement In/Out of Cells (Ch 3)</h4>
+                    <p id="info-transport">Transport details.</p>
+                </div>
+
+                <button class="btn-action reset" id="btn-reset">Reset View & Un-isolate</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Organelle Database ---
+    const organelleData = {
+        'nucleus': {
+            name: 'Nucleus',
+            color: 0x8b5cf6, // purple
+            desc: 'The control center of the cell containing genetic material (DNA).',
+            structure: 'Features a double nuclear envelope with nuclear pores. Inside, the dark nucleolus is visible where ribosomes are synthesized, surrounded by chromatin.',
+            metabolism: 'Controls protein synthesis by transcribing DNA into mRNA. Essential for cell division and regulating metabolic activities.',
+            transport: 'Nuclear pores tightly regulate the active transport of large molecules (like RNA and proteins) between the nucleoplasm and cytoplasm.'
+        },
+        'mitochondria': {
+            name: 'Mitochondrion',
+            color: 0xf97316, // orange
+            desc: 'The powerhouse of the cell, responsible for generating energy.',
+            structure: 'Contains a smooth outer membrane and a highly folded inner membrane called cristae, which massively increases surface area. The fluid inside is the matrix.',
+            metabolism: 'Site of Aerobic Respiration.<br><br><b>Glucose + Oxygen → Carbon Dioxide + Water + ATP</b>',
+            transport: 'Requires continuous inward diffusion of Oxygen and Glucose. Waste products (Carbon Dioxide and Water) diffuse outward into the cytoplasm.'
+        },
+        'chloroplast': {
+            name: 'Chloroplast',
+            color: 0x22c55e, // green
+            desc: 'Organelle found in plant cells responsible for photosynthesis.',
+            structure: 'Bounded by a double membrane. The cross-section reveals stacks of disk-like thylakoids (called grana) containing chlorophyll, suspended in a fluid called stroma.',
+            metabolism: 'Site of Photosynthesis.<br><br><b>Carbon Dioxide + Water (+ Light) → Glucose + Oxygen</b>',
+            transport: 'Carbon dioxide diffuses into the chloroplast from the cytoplasm, while produced oxygen diffuses out. Water moves in via osmosis.'
+        },
+        'vacuole': {
+            name: 'Central Vacuole',
+            color: 0x3b82f6, // blue
+            desc: 'A large, fluid-filled sac occupying most of a mature plant cell.',
+            structure: 'Surrounded by a single selectively permeable membrane called the tonoplast. Filled with cell sap (water, dissolved sugars, and mineral ions).',
+            metabolism: 'Acts as a storage unit for nutrients and waste. Supports the cell structurally by maintaining internal hydrostatic pressure.',
+            transport: '<b>Osmosis Engine:</b> High solute concentration in the sap draws water in via osmosis, generating turgor pressure that keeps the plant rigid. If water leaves, the cell plasmolyses.'
+        },
+        'cellwall': {
+            name: 'Cell Wall',
+            color: 0x064e3b, // dark green
+            desc: 'A rigid, protective outer layer found only in plant cells.',
+            structure: 'Made of overlapping cellulose fibers arranged in a cross-linked matrix. It is highly porous and strong.',
+            metabolism: 'Provides mechanical support and prevents the cell from bursting (lysis) when the vacuole fills with water.',
+            transport: '<b>Fully Permeable:</b> Unlike membranes, the cell wall allows water and dissolved solutes to diffuse freely through its large pores.'
+        },
+        'cellmembrane': {
+            name: 'Cell Membrane',
+            color: 0xfca5a5, // light red/pink for animal, light green for plant
+            desc: 'The semi-permeable boundary surrounding the cytoplasm.',
+            structure: 'Composed of a phospholipid bilayer embedded with various transport proteins, glycoproteins, and cholesterol.',
+            metabolism: 'Maintains homeostasis by strictly controlling the internal environment of the cell. Involved in cell signaling.',
+            transport: '<b>Selective Barrier:</b> Site of simple diffusion (small/lipid-soluble molecules), osmosis (water), facilitated diffusion, and Active Transport (using ATP to move ions against the gradient).'
+        },
+        'golgi': {
+            name: 'Golgi Apparatus',
+            color: 0xef4444, // red
+            desc: 'The shipping and receiving center of the cell.',
+            structure: 'A series of flattened, stacked membrane pouches called cisternae.',
+            metabolism: 'Modifies, sorts, and packages proteins and lipids for transport out of the cell or to other organelles.',
+            transport: 'Uses vesicles to transport molecules via exocytosis to the cell membrane.'
+        }
+    };
+
+    // --- State Variables ---
+    let currentCellType = 'plant';
+    let selectedOrganelle = null;
+    let explodedValue = 0;
+    
+    // Scene setup
+    const container = document.getElementById('simulation-container');
+    const canvas = document.getElementById('canvas-3d');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    
+    // Global Clipping Plane (used for cross-section slice)
+    const clipPlane = new THREE.Plane(new THREE.Vector3(1, 0, 0).normalize(), 100);
+    renderer.localClippingEnabled = true;
+
+    const scene = new THREE.Scene();
+    
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(0, 10, 35);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxDistance = 60;
+    controls.minDistance = 3;
+
+    // Fix for: "Persistent angle viewing preventing rotation"
+    // When the user drags to rotate the camera, immediately unlock any lerping behavior!
+    controls.addEventListener('start', () => {
+        targetCameraPos = null;
+    });
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+    
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    dirLight.position.set(10, 20, 15);
+    scene.add(dirLight);
+
+    const backLight = new THREE.DirectionalLight(0x8b5cf6, 0.5);
+    backLight.position.set(-10, -10, -10);
+    scene.add(backLight);
+
+    // Groups
+    const plantGroup = new THREE.Group();
+    const animalGroup = new THREE.Group();
+    scene.add(plantGroup);
+    scene.add(animalGroup);
+
+    // Array for raycasting
+    let interactableObjects = [];
+    // Keep track of top level groups for explosion
+    let explodableGroups = { plant: [], animal: [] };
+
+    // --- Materials with Clipping Support (DoubleSide fixed!) ---
+    function createMaterial(color, opacity = 1, transparent = false, wireframe = false) {
+        return new THREE.MeshStandardMaterial({
+            color: color,
+            transparent: transparent || opacity < 1,
+            opacity: opacity,
+            wireframe: wireframe,
+            side: THREE.DoubleSide, // FIX: Renders the inside correctly during clipping
+            clippingPlanes: [clipPlane],
+            clipIntersection: false
+        });
+    }
+
+    // --- Procedural Generation Functions ---
+    
+    function addOrganelleData(group, mesh, type, explodeVector, cellType) {
+        // We attach data to BOTH the mesh (for raycasting) and the group (for exploding)
+        mesh.userData = { type: type, explodeVector: explodeVector, isInteractable: true };
+        interactableObjects.push(mesh);
+        
+        group.userData = { type: type, explodeVector: explodeVector, originalPos: group.position.clone() };
+        explodableGroups[cellType].push(group);
+    }
+
+    function generatePlantCell() {
+        // Cell Wall
+        const wallGroup = new THREE.Group();
+        const wallGeo = new THREE.BoxGeometry(18, 11, 14);
+        const wallMat = createMaterial(0x064e3b, 0.25, true);
+        const wall = new THREE.Mesh(wallGeo, wallMat);
+        const edges = new THREE.EdgesGeometry(wallGeo);
+        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.8 }));
+        wallGroup.add(wall);
+        wallGroup.add(line);
+        addOrganelleData(wallGroup, wall, 'cellwall', new THREE.Vector3(0,0,0), 'plant');
+        plantGroup.add(wallGroup);
+
+        // Cell Membrane
+        const memGroup = new THREE.Group();
+        const memGeo = new THREE.BoxGeometry(17.5, 10.5, 13.5);
+        const memMat = createMaterial(0x34d399, 0.15, true);
+        const membrane = new THREE.Mesh(memGeo, memMat);
+        memGroup.add(membrane);
+        addOrganelleData(memGroup, membrane, 'cellmembrane', new THREE.Vector3(0,0,0), 'plant');
+        plantGroup.add(memGroup);
+
+        // Central Vacuole
+        const vacGroup = new THREE.Group();
+        const vacGeo = new THREE.BoxGeometry(11, 7, 9, 8, 8, 8);
+        const pos = vacGeo.attributes.position;
+        for(let i=0; i<pos.count; i++) {
+            pos.setXYZ(i, pos.getX(i) * (1 + Math.random()*0.08), pos.getY(i) * (1 + Math.random()*0.08), pos.getZ(i) * (1 + Math.random()*0.08));
+        }
+        vacGeo.computeVertexNormals();
+        const vacMat = createMaterial(0x3b82f6, 0.4, true);
+        const vacuole = new THREE.Mesh(vacGeo, vacMat);
+        vacGroup.position.set(0, 0.5, 0);
+        vacGroup.add(vacuole);
+        addOrganelleData(vacGroup, vacuole, 'vacuole', new THREE.Vector3(0, 1, 0), 'plant');
+        plantGroup.add(vacGroup);
+
+        // Nucleus
+        generateNucleus(plantGroup, new THREE.Vector3(-6, -2, -3.5), new THREE.Vector3(-1, -1, -1), 'plant');
+
+        // Chloroplasts
+        generateChloroplasts(plantGroup, 10);
+        
+        // Mitochondria
+        generateMitochondria(plantGroup, 6, 6, 'plant');
+    }
+
+    function generateAnimalCell() {
+        // Cell Membrane (Organic Sphere)
+        const memGroup = new THREE.Group();
+        const memGeo = new THREE.IcosahedronGeometry(10, 4);
+        const pos = memGeo.attributes.position;
+        for(let i=0; i<pos.count; i++) {
+            let v = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+            v.normalize().multiplyScalar(10 + Math.sin(v.x*2)*0.6 + Math.cos(v.y*3)*0.6);
+            pos.setXYZ(i, v.x, v.y, v.z);
+        }
+        memGeo.computeVertexNormals();
+        const memMat = createMaterial(0xfca5a5, 0.25, true);
+        const membrane = new THREE.Mesh(memGeo, memMat);
+        memGroup.add(membrane);
+        addOrganelleData(memGroup, membrane, 'cellmembrane', new THREE.Vector3(0,0,0), 'animal');
+        animalGroup.add(memGroup);
+
+        // Nucleus (Center)
+        generateNucleus(animalGroup, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0), 'animal');
+
+        // Golgi Apparatus
+        generateGolgi(animalGroup, new THREE.Vector3(4, 2, 2));
+
+        // Mitochondria
+        generateMitochondria(animalGroup, 10, 7, 'animal');
+    }
+
+    function generateNucleus(parentGroup, position, explodeDir, cellType) {
+        const nucGroup = new THREE.Group();
+        nucGroup.position.copy(position);
+
+        // Nuclear Envelope
+        const nucGeo = new THREE.SphereGeometry(2.5, 32, 32);
+        const nucMat = createMaterial(0x8b5cf6, 1);
+        const nucleus = new THREE.Mesh(nucGeo, nucMat);
+        nucGroup.add(nucleus);
+        
+        // Nucleolus
+        const nucleolusGeo = new THREE.SphereGeometry(1, 32, 32);
+        const nucleolusMat = createMaterial(0x4c1d95, 1);
+        const nucleolus = new THREE.Mesh(nucleolusGeo, nucleolusMat);
+        nucGroup.add(nucleolus);
+
+        // Nuclear Pores (Small spheres on surface)
+        const poreMat = createMaterial(0xfde047, 1);
+        const poreGeo = new THREE.SphereGeometry(0.15, 8, 8);
+        for(let i=0; i<40; i++) {
+            const pore = new THREE.Mesh(poreGeo, poreMat);
+            const phi = Math.acos(2 * Math.random() - 1);
+            const theta = Math.random() * Math.PI * 2;
+            pore.position.setFromSphericalCoords(2.5, phi, theta);
+            nucGroup.add(pore);
+        }
+        
+        addOrganelleData(nucGroup, nucleus, 'nucleus', explodeDir.normalize(), cellType);
+        parentGroup.add(nucGroup);
+    }
+
+    function generateMitochondria(parentGroup, count, radius, cellType) {
+        for(let i=0; i<count; i++) {
+            const group = new THREE.Group();
+            
+            // Outer Membrane (Capsule made from sphere)
+            const mitoGeo = new THREE.SphereGeometry(0.8, 32, 32);
+            const mitoMat = createMaterial(0xf97316, 1);
+            const mito = new THREE.Mesh(mitoGeo, mitoMat);
+            mito.scale.set(0.7, 1.6, 0.7);
+            group.add(mito);
+            
+            // Inner Cristae (Folded planes for realistic cross-section)
+            const cristaeMat = createMaterial(0xc2410c, 1);
+            for(let c=0; c<6; c++) {
+                const planeGeo = new THREE.PlaneGeometry(1.2, 0.6);
+                const plane = new THREE.Mesh(planeGeo, cristaeMat);
+                plane.position.y = -0.9 + (c * 0.35);
+                plane.rotation.x = Math.PI/2;
+                plane.rotation.y = (c%2 === 0) ? 0.3 : -0.3; // Zig-zag fold effect
+                group.add(plane);
+            }
+            
+            const angle = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            const x = radius * Math.sin(phi) * Math.cos(angle);
+            const y = radius * Math.sin(phi) * Math.sin(angle);
+            const z = radius * Math.cos(phi);
+            
+            group.position.set(x, y, z);
+            group.lookAt(0,0,0);
+            group.rotateX(Math.PI/2 + Math.random());
+            
+            addOrganelleData(group, mito, 'mitochondria', new THREE.Vector3(x,y,z).normalize(), cellType);
+            parentGroup.add(group);
+        }
+    }
+
+    function generateChloroplasts(parentGroup, count) {
+        for(let i=0; i<count; i++) {
+            const group = new THREE.Group();
+            
+            // Outer Membrane (Flattened sphere)
+            const chGeo = new THREE.SphereGeometry(1.2, 32, 32);
+            const chMat = createMaterial(0x22c55e, 1);
+            const chloroplast = new THREE.Mesh(chGeo, chMat);
+            chloroplast.scale.set(1, 0.4, 1); // Disc shape
+            group.add(chloroplast);
+            
+            // Thylakoid Stacks (Grana)
+            const granaMat = createMaterial(0x14532d, 1);
+            const positions = [
+                [-0.5, 0, -0.5], [0.5, 0, -0.5], [-0.5, 0, 0.5], [0.5, 0, 0.5], [0, 0, 0]
+            ];
+            
+            positions.forEach(pos => {
+                const stackGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.6, 16);
+                const stack = new THREE.Mesh(stackGeo, granaMat);
+                stack.position.set(pos[0], pos[1], pos[2]);
+                group.add(stack);
+            });
+            
+            const angle = (i / count) * Math.PI * 2;
+            const x = Math.cos(angle) * 6.5;
+            const z = Math.sin(angle) * 5;
+            const y = (Math.random() - 0.5) * 7;
+            
+            group.position.set(x, y, z);
+            group.lookAt(0, y, 0);
+            group.rotateX(Math.PI/2);
+            
+            addOrganelleData(group, chloroplast, 'chloroplast', new THREE.Vector3(x,y,z).normalize(), 'plant');
+            parentGroup.add(group);
+        }
+    }
+
+    function generateGolgi(parentGroup, position) {
+        const group = new THREE.Group();
+        group.position.copy(position);
+        
+        const golgiMat = createMaterial(0xef4444, 1);
+        
+        // Cisternae (Stacked toruses)
+        for(let i=0; i<4; i++) {
+            const radius = 1.5 - (i * 0.2);
+            const tube = 0.25 - (i * 0.02);
+            const torusGeo = new THREE.TorusGeometry(radius, tube, 16, 64, Math.PI); // Half torus
+            const cisterna = new THREE.Mesh(torusGeo, golgiMat);
+            cisterna.position.y = i * 0.4;
+            cisterna.rotation.x = Math.PI / 2;
+            group.add(cisterna);
+        }
+
+        // Vesicles
+        const vesGeo = new THREE.SphereGeometry(0.25, 16, 16);
+        const v1 = new THREE.Mesh(vesGeo, golgiMat); v1.position.set(1.5, 1.2, 0);
+        const v2 = new THREE.Mesh(vesGeo, golgiMat); v2.position.set(-1.8, 0.5, 0.5);
+        group.add(v1); group.add(v2);
+        
+        group.rotation.set(Math.random(), Math.random(), Math.random());
+        
+        // Add interaction to the largest cisterna
+        const mainMesh = group.children[0];
+        addOrganelleData(group, mainMesh, 'golgi', position.clone().normalize(), 'animal');
+        parentGroup.add(group);
+    }
+
+    // --- Initialize ---
+    generatePlantCell();
+    generateAnimalCell();
+
+    // Remove Loader
+    document.getElementById('loader').style.opacity = '0';
+    setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+
+    function switchCellType(type) {
+        currentCellType = type;
+        if(type === 'plant') {
+            plantGroup.visible = true;
+            animalGroup.visible = false;
+            document.getElementById('btn-plant').classList.add('active');
+            document.getElementById('btn-animal').classList.remove('active');
+        } else {
+            plantGroup.visible = false;
+            animalGroup.visible = true;
+            document.getElementById('btn-animal').classList.add('active');
+            document.getElementById('btn-plant').classList.remove('active');
+        }
+        resetView();
+        populateList();
+    }
+
+    // --- UI Handlers ---
+    
+    // Transparency Slider (X-Ray)
+    const opSlider = document.getElementById('slider-opacity');
+    opSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        document.getElementById('val-opacity').innerText = Math.round(val * 100) + '%';
+        
+        interactableObjects.forEach(mesh => {
+            if(mesh.userData.type === 'cellwall' || mesh.userData.type === 'cellmembrane') {
+                mesh.material.opacity = val;
+                mesh.material.transparent = val < 1;
+                mesh.visible = val > 0.05;
+            }
+        });
+    });
+
+    // Exploded View Slider
+    const expSlider = document.getElementById('slider-explode');
+    expSlider.addEventListener('input', (e) => {
+        explodedValue = parseFloat(e.target.value);
+        document.getElementById('val-explode').innerText = Math.round(explodedValue * 10) + '%';
+        updateExplosion();
+    });
+
+    function updateExplosion() {
+        if(selectedOrganelle) return; // Prevent explosion while isolated
+        
+        const activeGroups = explodableGroups[currentCellType];
+        
+        activeGroups.forEach(group => {
+            const vec = group.userData.explodeVector;
+            const orig = group.userData.originalPos;
+            const type = group.userData.type;
+            
+            if(type !== 'cellwall' && type !== 'cellmembrane') {
+                group.position.copy(orig).add(vec.clone().multiplyScalar(explodedValue));
+            }
+        });
+    }
+
+    document.getElementById('btn-plant').addEventListener('click', () => switchCellType('plant'));
+    document.getElementById('btn-animal').addEventListener('click', () => switchCellType('animal'));
+    document.getElementById('btn-reset').addEventListener('click', resetView);
+
+    // --- Interaction / Raycasting ---
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let hoveredMesh = null;
+    let originalEmissive = new THREE.Color(0x000000);
+
+    window.addEventListener('resize', () => {
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+    });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+
+    // Mouse Move for Hover
+    canvas.addEventListener('pointermove', (e) => {
+        if(selectedOrganelle) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        
+        const activeMeshes = interactableObjects.filter(m => {
+            let p = m.parent;
+            while(p && p.type !== 'Scene') {
+                if(p === plantGroup && currentCellType !== 'plant') return false;
+                if(p === animalGroup && currentCellType !== 'animal') return false;
+                p = p.parent;
+            }
+            return m.visible;
+        });
+
+        const intersects = raycaster.intersectObjects(activeMeshes, false);
+
+        if (intersects.length > 0) {
+            let target = intersects[0].object;
+            if((target.userData.type === 'cellwall' || target.userData.type === 'cellmembrane') && target.material.opacity < 0.2) {
+                if(intersects.length > 1) target = intersects[1].object;
+                else target = null;
+            }
+            
+            if(target && target !== hoveredMesh) {
+                if(hoveredMesh) hoveredMesh.material.emissive.copy(originalEmissive);
+                hoveredMesh = target;
+                originalEmissive.copy(hoveredMesh.material.emissive);
+                hoveredMesh.material.emissive.setHex(0x444444);
+                canvas.style.cursor = 'pointer';
+            }
+        } else {
+            if(hoveredMesh) {
+                hoveredMesh.material.emissive.copy(originalEmissive);
+                hoveredMesh = null;
+                canvas.style.cursor = 'default';
+            }
+        }
+    });
+
+    // Fix for: "Click to rotate selects organelle"
+    // We only trigger selection if the mouse wasn't dragged.
+    let ptrDownX = 0; let ptrDownY = 0;
+    
+    canvas.addEventListener('pointerdown', (e) => {
+        ptrDownX = e.clientX;
+        ptrDownY = e.clientY;
+    });
+
+    canvas.addEventListener('pointerup', (e) => {
+        const distX = Math.abs(e.clientX - ptrDownX);
+        const distY = Math.abs(e.clientY - ptrDownY);
+        
+        // If moved less than 5 pixels, it was a click, not a drag!
+        if(distX < 5 && distY < 5 && hoveredMesh) {
+            isolateOrganelle(hoveredMesh.userData.type, hoveredMesh);
+        }
+    });
+
+    // Target position for camera lerp
+    let targetCameraPos = null;
+    let targetCameraLookAt = new THREE.Vector3(0,0,0);
+
+    function isolateOrganelle(type, meshRef = null) {
+        selectedOrganelle = type;
+        const data = organelleData[type];
+        
+        if(!meshRef) {
+            meshRef = interactableObjects.find(m => {
+                let p = m.parent;
+                let isActive = true;
+                while(p && p.type !== 'Scene') {
+                    if(p === plantGroup && currentCellType !== 'plant') isActive = false;
+                    if(p === animalGroup && currentCellType !== 'animal') isActive = false;
+                    p = p.parent;
+                }
+                return isActive && m.userData.type === type;
+            });
+        }
+        if(!meshRef) return;
+
+        // Reset explosion slider to 0
+        expSlider.value = 0;
+        explodedValue = 0;
+        updateExplosion();
+
+        // 1. Fade out everything else
+        const activeGroup = currentCellType === 'plant' ? plantGroup : animalGroup;
+        
+        activeGroup.traverse(child => {
+            if(child.isMesh) {
+                if(child.userData.origOp === undefined) {
+                    child.userData.origOp = child.material.opacity;
+                    child.userData.origTrans = child.material.transparent;
+                }
+                
+                let isSelected = false;
+                let p = child;
+                while(p) {
+                    if(p === meshRef || (p.children && p.children.includes(meshRef))) isSelected = true;
+                    // If the parent group matches, the whole organelle is selected
+                    if(p.userData && p.userData.type === type) isSelected = true;
+                    p = p.parent;
+                }
+
+                if(!isSelected) {
+                    child.material.transparent = true;
+                    child.material.opacity = 0.05;
+                } else {
+                    child.material.transparent = child.userData.origTrans;
+                    child.material.opacity = child.userData.origOp;
+                }
+            }
+        });
+
+        // 2. Setup Camera Lerp Targets
+        const worldPos = new THREE.Vector3();
+        // Find the top-level group position for accurate centering
+        let topGroup = meshRef;
+        while(topGroup.parent && topGroup.parent.type === 'Group' && topGroup.parent !== activeGroup) {
+            topGroup = topGroup.parent;
+        }
+        topGroup.getWorldPosition(worldPos);
+
+        targetCameraLookAt.copy(worldPos);
+        
+        let distance = 8;
+        if(type === 'cellwall' || type === 'cellmembrane') distance = 25;
+        else if(type === 'vacuole') distance = 15;
+        
+        targetCameraPos = worldPos.clone().add(new THREE.Vector3(distance, distance*0.5, distance));
+
+        // 3. Enable Clipping Plane (Correctly oriented!)
+        // The normal must point TOWARDS the camera to clip away the front half!
+        const dirToCamera = targetCameraPos.clone().sub(worldPos).normalize();
+        clipPlane.normal.copy(dirToCamera);
+        clipPlane.constant = -clipPlane.normal.dot(worldPos);
+
+        // 4. Update UI Panel
+        document.getElementById('default-view').style.display = 'none';
+        document.getElementById('organelle-info').style.display = 'block';
+        
+        document.getElementById('info-name').innerText = data.name;
+        document.getElementById('info-desc').innerText = data.desc;
+        document.getElementById('info-structure').innerHTML = data.structure;
+        document.getElementById('info-metabolism').innerHTML = data.metabolism;
+        document.getElementById('info-transport').innerHTML = data.transport;
+        
+        const badge = document.querySelector('.badge.organelle');
+        badge.style.color = '#' + data.color.toString(16).padStart(6, '0');
+        badge.style.borderColor = '#' + data.color.toString(16).padStart(6, '0');
+    }
+
+    function resetView() {
+        selectedOrganelle = null;
+        targetCameraPos = new THREE.Vector3(0, 10, 35);
+        targetCameraLookAt = new THREE.Vector3(0, 0, 0);
+        
+        // Disable slice by pushing plane far away
+        clipPlane.constant = 1000;
+
+        // Restore Opacities
+        const activeGroup = currentCellType === 'plant' ? plantGroup : animalGroup;
+        activeGroup.traverse(child => {
+            if(child.isMesh && child.userData.origOp !== undefined) {
+                if(child.userData.type === 'cellwall' || child.userData.type === 'cellmembrane') {
+                    const val = parseFloat(opSlider.value);
+                    child.material.opacity = val;
+                    child.material.transparent = val < 1;
+                } else {
+                    child.material.opacity = child.userData.origOp;
+                    child.material.transparent = child.userData.origTrans;
+                }
+            }
+        });
+
+        document.getElementById('organelle-info').style.display = 'none';
+        document.getElementById('default-view').style.display = 'block';
+        
+        updateExplosion();
+    }
+
+    function populateList() {
+        const list = document.getElementById('quick-list');
+        list.innerHTML = '';
+        
+        const keys = currentCellType === 'plant' ? 
+            ['cellwall', 'cellmembrane', 'nucleus', 'chloroplast', 'mitochondria', 'vacuole'] :
+            ['cellmembrane', 'nucleus', 'mitochondria', 'golgi'];
+            
+        keys.forEach(k => {
+            const data = organelleData[k];
+            const div = document.createElement('div');
+            div.className = 'organelle-item';
+            div.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="organelle-indicator" style="background-color: #${data.color.toString(16).padStart(6, '0')}"></div>
+                    <span class="organelle-name">${data.name}</span>
+                </div>
+                <span style="color:var(--text-muted); font-size:16px;">⏵</span>
+            `;
+            div.addEventListener('click', () => isolateOrganelle(k));
+            list.appendChild(div);
+        });
+    }
+    
+    switchCellType('plant');
+
+    // --- Animation Loop ---
+    const clock = new THREE.Clock();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+
+        if(!selectedOrganelle && explodedValue === 0) {
+            plantGroup.rotation.y += 0.05 * delta;
+            animalGroup.rotation.y += 0.05 * delta;
+        }
+
+        // Smooth Camera Lerping
+        if(targetCameraPos) {
+            camera.position.lerp(targetCameraPos, 0.06);
+            controls.target.lerp(targetCameraLookAt, 0.06);
+            
+            // Release lock once arrived
+            if(camera.position.distanceTo(targetCameraPos) < 0.2) {
+                targetCameraPos = null;
+            }
+        }
+
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    animate();
+
+</script>
+
+</body>
+</html>
