@@ -7,6 +7,7 @@
     <style>
         :root {
             --primary-purple: #6b46c1;
+            --primary-hover: #553c9a;
             --text-main: #1e293b;
             --text-muted: #64748b;
             --bg-light: #f8fafc;
@@ -14,15 +15,13 @@
             --border-light: #e2e8f0;
             --math-accent: #f59e0b; /* Orange for Math */
             --math-accent-light: #fef3c7;
+            --math-accent-hover: #d97706;
         }
 
         body, html {
             margin: 0; padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-light); color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
         }
 
         .navbar {
@@ -35,96 +34,38 @@
         .back-link { color: var(--text-muted); text-decoration: none; font-weight: 500; transition: 0.2s; }
         .back-link:hover { color: var(--primary-purple); }
 
-        .container { 
-            max-width: 1000px; 
-            margin: 40px auto; 
-            padding: 0 20px; 
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
         
-        .header { margin-bottom: 30px; border-bottom: 2px solid var(--border-light); padding-bottom: 20px; }
+        .header { margin-bottom: 40px; border-bottom: 2px solid var(--border-light); padding-bottom: 20px; }
         .header h1 { font-size: 36px; margin: 0 0 10px 0; display: flex; align-items: center; gap: 12px; }
         .header p { font-size: 18px; color: var(--text-muted); margin: 0; }
 
-        /* Premium Placeholder View */
-        .placeholder-card {
-            background: var(--white);
-            border-radius: 20px;
-            border: 1px solid var(--border-light);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-            padding: 60px 40px;
-            text-align: center;
-            margin: auto;
-            max-width: 550px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.3s ease;
+        /* The Dashboard Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
+
+        .card {
+            background: var(--white); border-radius: 12px; padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid var(--border-light);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex; flex-direction: column;
         }
 
-        .placeholder-card:hover {
-            transform: translateY(-3px);
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.06); }
+        
+        .card-tag { 
+            align-self: flex-start; background: var(--math-accent-light); color: var(--math-accent-hover);
+            padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 15px; 
         }
 
-        .icon-container {
-            width: 130px;
-            height: 130px;
-            background-color: var(--math-accent-light);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 30px;
-            animation: pulse 2.5s infinite ease-in-out;
-        }
+        .card h3 { margin: 0 0 10px 0; font-size: 20px; }
+        .card p { color: var(--text-muted); font-size: 14px; margin: 0 0 20px 0; line-height: 1.5; flex-grow: 1; }
 
-        .icon-svg {
-            width: 70px;
-            height: 70px;
-            fill: var(--math-accent);
+        .btn-launch {
+            background-color: var(--math-accent); color: white; text-align: center;
+            padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-
-        .placeholder-card h2 {
-            font-size: 24px;
-            color: var(--text-main);
-            margin: 0 0 15px 0;
-            font-weight: 700;
-        }
-
-        .placeholder-card p {
-            font-size: 15px;
-            color: var(--text-muted);
-            line-height: 1.6;
-            margin: 0 0 35px 0;
-            max-width: 450px;
-        }
-
-        .btn-action {
-            background-color: var(--math-accent);
-            color: var(--white);
-            padding: 12px 32px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 15px;
-            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
-            transition: all 0.2s ease;
-        }
-
-        .btn-action:hover {
-            background-color: #d97706;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.2); }
-            50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-        }
+        .btn-launch:hover { background-color: var(--math-accent-hover); }
     </style>
 </head>
 <body>
@@ -136,20 +77,82 @@
 
     <div class="container">
         <div class="header">
-            <h1>📐 IGCSE Math</h1>
-            <p>Interactive simulations and experiments.</p>
+            <h1>📐 IGCSE Mathematics</h1>
+            <p>Interactive coordinate systems, arithmetic models, and geometric theorem sandboxes.</p>
         </div>
 
-        <div class="placeholder-card">
-            <div class="icon-container">
-                <!-- Compass & Ruler Math Icon -->
-                <svg class="icon-svg" viewBox="0 0 24 24">
-                    <path d="M4.5 10.5C3.67 10.5 3 11.17 3 12s.67 1.5 1.5 1.5.5-.67.5-1.5-.17-1.5-.5-1.5zm15 0c-.83 0-1.5.67-1.5 1.5s.17 1.5.5 1.5.5-.67.5-1.5-.17-1.5-.5-1.5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 13v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 1.93-.72 3.69-1.9 5.06z"/>
-                </svg>
+        <div class="grid">
+            <!-- Chapter 1 -->
+            <div class="card">
+                <span class="card-tag">Chapter 1</span>
+                <h3>1. Numbers</h3>
+                <p>Explore number systems, decimals, fractions, ratios, percentages, standard form, estimation, and core operations visually.</p>
+                <a href="01-numbers/index.html" class="btn-launch">Launch Chapter Portal 🧮</a>
             </div>
-            <h2>Content in development..</h2>
-            <p>We are currently designing visual assets, coordinate grids, and coordinate geometry simulations for the IGCSE Mathematics syllabus. Check back soon!</p>
-            <a href="../index.html#subjects-directory" class="btn-action">Explore Other Subjects</a>
+
+            <!-- Chapter 2 -->
+            <div class="card">
+                <span class="card-tag">Chapter 2</span>
+                <h3>2. Algebra</h3>
+                <p>Master indices, algebraic manipulation, solving linear/quadratic equations, sequences, inequalities, and functions.</p>
+                <a href="02-algebra/index.html" class="btn-launch">Launch Chapter Portal 🔤</a>
+            </div>
+
+            <!-- Chapter 3 -->
+            <div class="card">
+                <span class="card-tag">Chapter 3</span>
+                <h3>3. Coordinate Geometry</h3>
+                <p>Study straight line equations, midpoints, lengths, gradients, parallel/perpendicular lines, and linear graphs.</p>
+                <a href="03-coordinate-geometry/index.html" class="btn-launch">Launch Chapter Portal 📈</a>
+            </div>
+
+            <!-- Chapter 4 -->
+            <div class="card">
+                <span class="card-tag">Chapter 4</span>
+                <h3>4. Geometry</h3>
+                <p>Understand angles, polygons, symmetry, similarity, congruence, circle theorems, and constructions.</p>
+                <a href="04-geometry/index.html" class="btn-launch">Launch Chapter Portal 📐</a>
+            </div>
+
+            <!-- Chapter 5 -->
+            <div class="card">
+                <span class="card-tag">Chapter 5</span>
+                <h3>5. Mensuration</h3>
+                <p>Calculate perimeter, area, volume, and surface area of 2D/3D shapes, including cylinders, cones, and spheres.</p>
+                <a href="05-mensuration/index.html" class="btn-launch">Launch Chapter Portal 📦</a>
+            </div>
+
+            <!-- Chapter 6 -->
+            <div class="card">
+                <span class="card-tag">Chapter 6</span>
+                <h3>6. Trigonometry</h3>
+                <p>Explore right-angled triangles, sine/cosine rules, 3D trigonometry, bearings, and trigonometric functions.</p>
+                <a href="06-trigonometry/index.html" class="btn-launch">Launch Chapter Portal 🏔️</a>
+            </div>
+
+            <!-- Chapter 7 -->
+            <div class="card">
+                <span class="card-tag">Chapter 7</span>
+                <h3>7. Vectors & Transformation</h3>
+                <p>Study vector geometry, translations, reflections, rotations, enlargements, and shear matrices.</p>
+                <a href="07-vectors-transformation/index.html" class="btn-launch">Launch Chapter Portal 🏹</a>
+            </div>
+
+            <!-- Chapter 8 -->
+            <div class="card">
+                <span class="card-tag">Chapter 8</span>
+                <h3>8. Probability</h3>
+                <p>Master simple probability, relative frequency, tree diagrams, Venn diagrams, and conditional probability.</p>
+                <a href="08-probability/index.html" class="btn-launch">Launch Chapter Portal 🎲</a>
+            </div>
+
+            <!-- Chapter 9 -->
+            <div class="card">
+                <span class="card-tag">Chapter 9</span>
+                <h3>9. Statistics</h3>
+                <p>Analyze mean, median, mode, cumulative frequency, histograms, scatter diagrams, and statistical representation.</p>
+                <a href="09-statistics/index.html" class="btn-launch">Launch Chapter Portal 📊</a>
+            </div>
         </div>
     </div>
 

@@ -1,0 +1,157 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orient LMS | Biotechnology & Genetic Modification</title>
+    <style>
+        :root {
+            --primary-purple: #6b46c1;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --bg-light: #f8fafc;
+            --white: #ffffff;
+            --border-light: #e2e8f0;
+            --bio-accent: #10b981; /* Green for Bio */
+            --bio-accent-light: #d1fae5;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light); color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 40px; background-color: var(--white);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .logo { font-size: 22px; font-weight: bold; color: var(--primary-purple); text-decoration: none; }
+        .back-link { color: var(--text-muted); text-decoration: none; font-weight: 500; transition: 0.2s; }
+        .back-link:hover { color: var(--primary-purple); }
+
+        .container { 
+            max-width: 1000px; 
+            margin: 40px auto; 
+            padding: 0 20px; 
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header { margin-bottom: 30px; border-bottom: 2px solid var(--border-light); padding-bottom: 20px; }
+        .header h1 { font-size: 36px; margin: 0 0 10px 0; display: flex; align-items: center; gap: 12px; }
+        .header p { font-size: 18px; color: var(--text-muted); margin: 0; }
+
+        /* Premium Placeholder View */
+        .placeholder-card {
+            background: var(--white);
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            padding: 60px 40px;
+            text-align: center;
+            margin: auto;
+            max-width: 550px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease;
+        }
+
+        .placeholder-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .icon-container {
+            width: 130px;
+            height: 130px;
+            background-color: var(--bio-accent-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            animation: pulse 2.5s infinite ease-in-out;
+        }
+
+        .icon-svg {
+            width: 70px;
+            height: 70px;
+            fill: var(--bio-accent);
+        }
+
+        .placeholder-card h2 {
+            font-size: 24px;
+            color: var(--text-main);
+            margin: 0 0 15px 0;
+            font-weight: 700;
+        }
+
+        .placeholder-card p {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin: 0 0 35px 0;
+            max-width: 450px;
+        }
+
+        .btn-action {
+            background-color: var(--bio-accent);
+            color: var(--white);
+            padding: 12px 32px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 15px;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .btn-action:hover {
+            background-color: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="../../index.html" class="logo">âš¡ Orient LMS</a>
+        <a href="../index.html" class="back-link">â† Back to Biology Portal</a>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1>ðŸŒ¿ Biotechnology & Genetic Modification</h1>
+            <p>IGCSE Biology Chapter Resources.</p>
+        </div>
+
+        <div class="placeholder-card">
+            <div class="icon-container">
+                <!-- Leaf / Nature Biology Icon -->
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path d="M17 8C16.28 8 15.62 8.12 15 8.35V6H9V8.35C8.38 8.12 7.72 8 7 8c-3.87 0-7 3.13-7 7s3.13 7 7 7c2.38 0 4.47-1.19 5.74-3H11.26C9.99 18.81 7.9 20 7 20c-2.76 0-5-2.24-5-5s2.24-5 5-5c1.47 0 2.79.64 3.71 1.66L9 13v2l4-2-4-2v2l1.71-1.66c.92-1.02 2.24-1.66 3.71-1.66 2.76 0 5 2.24 5 5s-2.24 5-5 5c-.9 0-2.99-1.19-4.26-3H12.74c1.27 1.81 3.36 3 5.74 3 3.87 0 7-3.13 7-7s-3.13-7-7-7z"/>
+                </svg>
+            </div>
+            <h2>Content in development..</h2>
+            <p>We are designing interactive bacterial plasmid vector cuts, fermenter yeast growth trackers, and dynamic GMO crop trait selections. Check back soon!</p>
+            <a href="../index.html" class="btn-action">Back to Biology Portal</a>
+        </div>
+    </div>
+
+</body>
+</html>
