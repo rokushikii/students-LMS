@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Kinetic Theory Sandbox | Orient LMS</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.85);
+            --panel-border: rgba(255, 255, 255, 0.15);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --hot: #ef4444;
+            --cold: #3b82f6;
+        }
+
+        body {
+            margin: 0; padding: 0; overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            touch-action: none;
+        }
+
+        #canvas-container {
+            width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1;
+        }
+
+        /* Glassmorphism Panel */
+        #ui-panel {
+            position: absolute; top: 20px; left: 20px; z-index: 10;
+            width: 320px; padding: 25px; border-radius: 16px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 20px;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            max-height: 85vh; overflow-y: auto;
+        }
+
+        #ui-panel.minimized {
+            transform: translateX(-120%); opacity: 0; pointer-events: none;
+        }
+
+        #ui-toggle {
+            position: absolute; top: 20px; left: 20px; z-index: 11;
+            background: var(--accent); color: #0f172a; border: none; padding: 10px 15px;
+            border-radius: 8px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.2s;
+            display: none;
+        }
+        #ui-toggle:hover { background: #7dd3fc; }
+
+        @media (max-width: 768px) {
+            #ui-toggle { display: block; }
+            #ui-panel { top: 70px; width: calc(100vw - 40px); left: 20px; padding: 20px; }
+            .back-btn { display: none; }
+        }
+
+        h2 { margin: 0; font-size: 22px; font-weight: 600; color: var(--accent); }
+        p.subtitle { margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+
+        /* Controls */
+        .control-group { display: flex; flex-direction: column; gap: 8px; }
+        .control-group label { font-weight: 600; font-size: 13px; display: flex; justify-content: space-between; }
+        
+        select {
+            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--panel-border);
+            background: rgba(0,0,0,0.3); color: var(--text-main); font-family: inherit; font-weight: bold;
+            outline: none; cursor: pointer;
+        }
+        select option { background: var(--bg-color); color: var(--text-main); }
+
+        input[type="range"] {
+            -webkit-appearance: none; width: 100%; height: 8px; border-radius: 4px;
+            background: linear-gradient(to right, var(--cold), #f59e0b, var(--hot));
+            outline: none; transition: 0.2s; cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 22px; height: 22px; border-radius: 50%;
+            background: #fff; border: 2px solid var(--text-main);
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.1); }
+
+        /* Gauges Area */
+        .gauges { display: flex; justify-content: space-around; align-items: flex-end; padding-top: 10px; margin-bottom: 10px; }
+
+        /* Thermometer */
+        .thermometer-container { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .thermometer {
+            width: 14px; height: 100px; background: rgba(0,0,0,0.3);
+            border-radius: 10px 10px 0 0; position: relative;
+            border: 2px solid rgba(255,255,255,0.2); border-bottom: none;
+        }
+        .bulb {
+            width: 28px; height: 28px; background: rgba(0,0,0,0.3);
+            border-radius: 50%; position: relative; top: -5px;
+            border: 2px solid rgba(255,255,255,0.2);
+            display: flex; justify-content: center; align-items: center;
+        }
+        .fluid-stem {
+            position: absolute; bottom: 0; left: 2px; width: 10px; height: 10%;
+            background: var(--cold); border-radius: 5px; transition: height 0.3s ease, background 0.3s ease;
+        }
+        .fluid-bulb {
+            width: 20px; height: 20px; background: var(--cold);
+            border-radius: 50%; transition: background 0.3s ease;
+        }
+        .gauge-label { font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Pressure Gauge */
+        .pressure-container { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .dial-bg {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: conic-gradient(from 225deg, #10b981 0%, #f59e0b 35%, #ef4444 75%, transparent 75%);
+            position: relative; display: flex; justify-content: center; align-items: center;
+            border: 3px solid rgba(255,255,255,0.1); box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            transform: rotate(-135deg);
+        }
+        .dial-inner {
+            width: 60px; height: 60px; border-radius: 50%; background: var(--panel-bg);
+            position: absolute; z-index: 2;
+        }
+        .dial-marks {
+            position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 1; border-radius: 50%;
+        }
+        .mark {
+            position: absolute; width: 2px; height: 6px; background: rgba(255,255,255,0.5);
+            left: 39px; top: 0; transform-origin: 1px 40px;
+        }
+        .needle {
+            width: 4px; height: 40px; background: #fff; position: absolute;
+            bottom: 50%; left: calc(50% - 2px); transform-origin: bottom center;
+            transform: rotate(0deg); z-index: 3; border-radius: 2px;
+            transition: transform 0.1s;
+        }
+        .needle::after {
+            content: ''; width: 10px; height: 10px; background: #fff;
+            border-radius: 50%; position: absolute; bottom: -5px; left: -3px;
+        }
+
+        /* State Text Box */
+        .state-box {
+            background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px;
+            text-align: center; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .state-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .state-value { font-size: 26px; font-weight: 800; letter-spacing: 2px; color: var(--accent); transition: color 0.3s; }
+
+        /* Back Button */
+        .back-btn {
+            position: absolute; bottom: 20px; left: 20px; z-index: 10;
+            background: rgba(255,255,255,0.1); color: white; padding: 10px 20px;
+            border-radius: 8px; text-decoration: none; font-weight: bold;
+            backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);
+            transition: 0.2s;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.2); }
+
+    </style>
+</head>
+<body>
+
+    <button id="ui-toggle">☰ Settings</button>
+    <a href="../../index.html" class="back-btn">← Back to Menu</a>
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-panel">
+        <div>
+            <h2>Kinetic Theory</h2>
+            <p class="subtitle">Drag to rotate camera. Scroll to zoom.</p>
+        </div>
+
+        <div class="control-group">
+            <label>Material</label>
+            <select id="material-select">
+                <option value="water">Water (H₂O)</option>
+                <option value="oil">Cooking Oil</option>
+                <option value="iron">Iron (Fe)</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>
+                <span>Temperature</span>
+                <span id="temp-display">0 °C</span>
+            </label>
+            <input type="range" id="heat-slider" min="0" max="100" value="25">
+        </div>
+
+        <div class="gauges">
+            <div class="thermometer-container">
+                <div class="thermometer">
+                    <div class="fluid-stem" id="thermo-fluid"></div>
+                </div>
+                <div class="bulb">
+                    <div class="fluid-bulb" id="thermo-bulb"></div>
+                </div>
+                <span class="gauge-label">Temp</span>
+            </div>
+
+            <div class="pressure-container">
+                <div class="dial-bg">
+                    <div class="dial-marks" id="dial-marks"></div>
+                    <div class="dial-inner"></div>
+                    <div class="needle" id="pressure-needle"></div>
+                </div>
+                <span class="gauge-label">Pressure</span>
+            </div>
+        </div>
+
+        <div class="state-box">
+            <div class="state-title">Current Phase</div>
+            <div class="state-value" id="state-text">SOLID</div>
+        </div>
+    </div>
+
+    <!-- Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- UI & Material Setup ---
+        const MATERIALS = {
+            water: { min: -50, max: 150, melt: 0, boil: 100 },
+            oil: { min: -30, max: 350, melt: -10, boil: 300 },
+            iron: { min: 0, max: 3000, melt: 1538, boil: 2862 }
+        };
+        
+        let currentMaterial = MATERIALS.water;
+        let currentTemp = 0; // in Celsius
+
+        const uiToggle = document.getElementById('ui-toggle');
+        const uiPanel = document.getElementById('ui-panel');
+        uiToggle.addEventListener('click', () => {
+            uiPanel.classList.toggle('minimized');
+        });
+
+        // Initialize gauge marks
+        const marksContainer = document.getElementById('dial-marks');
+        for (let i = 0; i <= 270; i += 45) {
+            let mark = document.createElement('div');
+            mark.className = 'mark';
+            mark.style.transform = `rotate(${i}deg)`;
+            if(i % 90 !== 0) { mark.style.height = '4px'; mark.style.opacity = '0.5'; }
+            marksContainer.appendChild(mark);
+        }
+
+        // --- Setup Scene ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 10, 22);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 3, 0);
+        controls.maxDistance = 40;
+        controls.minDistance = 10;
+        controls.maxPolarAngle = Math.PI / 2 + 0.1; // Don't go below ground
+
+        // --- Lights ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xffffff, 0.8, 50);
+        pointLight.position.set(10, 20, 10);
+        scene.add(pointLight);
+
+        const heatLight = new THREE.PointLight(0x3b82f6, 0, 30);
+        heatLight.position.set(0, -1, 0);
+        scene.add(heatLight);
+
+        // --- Glass Container ---
+        const containerWidth = 8;
+        const containerHeight = 12;
+        
+        const glassMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff, metalness: 0.1, roughness: 0.1,
+            transmission: 0.9, ior: 1.5, transparent: true, opacity: 1, side: THREE.DoubleSide
+        });
+        const borderMat = new THREE.MeshBasicMaterial({ color: 0x445566, wireframe: true, transparent: true, opacity: 0.3 });
+
+        const boxGeo = new THREE.BoxGeometry(containerWidth, containerHeight, containerWidth);
+        const boxMesh = new THREE.Mesh(boxGeo, glassMat);
+        const boxWire = new THREE.Mesh(boxGeo, borderMat);
+        boxMesh.position.y = containerHeight / 2;
+        boxWire.position.y = containerHeight / 2;
+        scene.add(boxMesh);
+        scene.add(boxWire);
+
+        const plateGeo = new THREE.BoxGeometry(containerWidth + 1, 0.5, containerWidth + 1);
+        const plateMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+        const plate = new THREE.Mesh(plateGeo, plateMat);
+        plate.position.y = -0.25;
+        scene.add(plate);
+
+        // --- Particles Setup ---
+        const GRID_DIM = 10; 
+        const NUM_PARTICLES = 1000; // 10x10x10
+        const PARTICLE_RADIUS = 0.15;
+        
+        const geometry = new THREE.SphereGeometry(PARTICLE_RADIUS, 16, 16);
+        const material = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.2, metalness: 0.1 });
+        const instancedMesh = new THREE.InstancedMesh(geometry, material, NUM_PARTICLES);
+        instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        scene.add(instancedMesh);
+
+        const positions = new Float32Array(NUM_PARTICLES * 3);
+        const velocities = new Float32Array(NUM_PARTICLES * 3);
+        const latticePos = new Float32Array(NUM_PARTICLES * 3);
+        const dummy = new THREE.Object3D();
+
+        const spacing = PARTICLE_RADIUS * 2.2;
+        const offsetX = -((GRID_DIM - 1) * spacing) / 2;
+        const offsetY = PARTICLE_RADIUS + 0.1;
+        const offsetZ = -((GRID_DIM - 1) * spacing) / 2;
+
+        function resetLattice() {
+            let idx = 0;
+            for (let x = 0; x < GRID_DIM; x++) {
+                for (let y = 0; y < GRID_DIM; y++) {
+                    for (let z = 0; z < GRID_DIM; z++) {
+                        if (idx >= NUM_PARTICLES) break;
+                        let px = offsetX + x * spacing;
+                        let py = offsetY + y * spacing;
+                        let pz = offsetZ + z * spacing;
+                        latticePos[idx*3] = px; latticePos[idx*3+1] = py; latticePos[idx*3+2] = pz;
+                        positions[idx*3] = px; positions[idx*3+1] = py; positions[idx*3+2] = pz;
+                        velocities[idx*3] = 0; velocities[idx*3+1] = 0; velocities[idx*3+2] = 0;
+                        idx++;
+                    }
+                }
+            }
+        }
+        resetLattice();
+
+        // --- UI Interactions ---
+        const materialSelect = document.getElementById('material-select');
+        const slider = document.getElementById('heat-slider');
+        const tempDisplay = document.getElementById('temp-display');
+        const thermoFluid = document.getElementById('thermo-fluid');
+        const thermoBulb = document.getElementById('thermo-bulb');
+        const pressureNeedle = document.getElementById('pressure-needle');
+        const stateText = document.getElementById('state-text');
+
+        let currentPressure = 0;
+        let smoothedPressure = 0;
+        
+        const COLORS = {
+            solid: new THREE.Color(0x3b82f6),
+            liquid: new THREE.Color(0xf59e0b),
+            gas: new THREE.Color(0xef4444)
+        };
+
+        materialSelect.addEventListener('change', (e) => {
+            currentMaterial = MATERIALS[e.target.value];
+            // Adjust slider to sit around room temp or lower end
+            slider.value = 25; 
+            resetLattice();
+        });
+
+        // --- Physics Engine ---
+        const dt = 0.016;
+        const boundsX = containerWidth / 2 - PARTICLE_RADIUS;
+        const boundsZ = containerWidth / 2 - PARTICLE_RADIUS;
+        const boundsYMax = containerHeight - PARTICLE_RADIUS;
+        const boundsYMin = PARTICLE_RADIUS;
+
+        function updatePhysics() {
+            // Map slider 0-100 to Material's Temp range
+            let sliderPercent = parseInt(slider.value) / 100;
+            currentTemp = currentMaterial.min + (currentMaterial.max - currentMaterial.min) * sliderPercent;
+            tempDisplay.innerText = Math.round(currentTemp) + ' °C';
+
+            let isSolid = currentTemp < currentMaterial.melt;
+            let isLiquid = currentTemp >= currentMaterial.melt && currentTemp < currentMaterial.boil;
+            let isGas = currentTemp >= currentMaterial.boil;
+
+            // Heat mapping for visuals/agitation
+            let heatFactor = sliderPercent; 
+            
+            // Lattice Binding Force
+            let latticeForce = 0;
+            if (isSolid) {
+                let solidDepth = (currentMaterial.melt - currentTemp) / (currentMaterial.melt - currentMaterial.min);
+                latticeForce = Math.max(0.1, solidDepth);
+            }
+
+            // Gravity & Damping
+            let currentGravity = -15.0;
+            let damping = 0.96; 
+            let baseAgitation = 0;
+
+            if (isSolid) {
+                currentGravity = 0; // Solid holds itself
+                damping = 0.85; // High friction so it vibrates in place
+                baseAgitation = 1 + (1 - latticeForce) * 5; 
+            } else if (isLiquid) {
+                currentGravity = -25.0; // Strong gravity to pool at bottom
+                damping = 0.90; // High friction to prevent high bouncing, they just slide
+                // Agitation increases as we approach boiling point
+                let liquidDepth = (currentTemp - currentMaterial.melt) / (currentMaterial.boil - currentMaterial.melt);
+                baseAgitation = 2 + liquidDepth * 8;
+            } else {
+                currentGravity = 0; // Gas escapes gravity mostly
+                damping = 0.99; // Low friction for gas
+                baseAgitation = 20 + (currentTemp - currentMaterial.boil) / (currentMaterial.max - currentMaterial.boil) * 30;
+            }
+
+            currentPressure = 0;
+
+            // 1. Particle Integration
+            for (let i = 0; i < NUM_PARTICLES; i++) {
+                let px = positions[i*3], py = positions[i*3+1], pz = positions[i*3+2];
+                let vx = velocities[i*3], vy = velocities[i*3+1], vz = velocities[i*3+2];
+
+                vy += currentGravity * dt;
+
+                // Solid lattice
+                if (isSolid && latticeForce > 0) {
+                    let lx = latticePos[i*3], ly = latticePos[i*3+1], lz = latticePos[i*3+2];
+                    let spring = 200 * latticeForce;
+                    vx += (lx - px) * spring * dt;
+                    vy += (ly - py) * spring * dt;
+                    vz += (lz - pz) * spring * dt;
+                }
+
+                // Boiling effect: random upward thrust for liquid particles near boiling point
+                if (isLiquid && Math.random() < 0.05) {
+                    let liquidDepth = (currentTemp - currentMaterial.melt) / (currentMaterial.boil - currentMaterial.melt);
+                    if (liquidDepth > 0.8 && py > boundsYMin + 1) { // if near surface
+                        if (Math.random() < liquidDepth) {
+                            vy += 15 + Math.random() * 10; // Escape velocity
+                        }
+                    }
+                }
+
+                // Random agitation (Temperature)
+                if (baseAgitation > 0) {
+                    vx += (Math.random() - 0.5) * baseAgitation * dt * 60;
+                    vy += (Math.random() - 0.5) * baseAgitation * dt * 60;
+                    vz += (Math.random() - 0.5) * baseAgitation * dt * 60;
+                }
+
+                vx *= damping; vy *= damping; vz *= damping;
+                px += vx * dt; py += vy * dt; pz += vz * dt;
+
+                // Wall Collisions
+                if (px < -boundsX) { px = -boundsX; vx *= -1; currentPressure += Math.abs(vx); }
+                if (px > boundsX) { px = boundsX; vx *= -1; currentPressure += Math.abs(vx); }
+                if (pz < -boundsZ) { pz = -boundsZ; vz *= -1; currentPressure += Math.abs(vz); }
+                if (pz > boundsZ) { pz = boundsZ; vz *= -1; currentPressure += Math.abs(vz); }
+                if (py < boundsYMin) { py = boundsYMin; vy *= -0.3; currentPressure += Math.abs(vy); } // Floor absorbs energy
+                if (py > boundsYMax) { py = boundsYMax; vy *= -1; currentPressure += Math.abs(vy); }
+
+                positions[i*3] = px; positions[i*3+1] = py; positions[i*3+2] = pz;
+                velocities[i*3] = vx; velocities[i*3+1] = vy; velocities[i*3+2] = vz;
+            }
+
+            // 2. Spatial Hash Collision
+            if (!isSolid) {
+                const grid = new Map();
+                const cellSize = PARTICLE_RADIUS * 2.5; 
+                
+                for(let i=0; i < NUM_PARTICLES; i++) {
+                    let hx = Math.floor(positions[i*3] / cellSize);
+                    let hy = Math.floor(positions[i*3+1] / cellSize);
+                    let hz = Math.floor(positions[i*3+2] / cellSize);
+                    let h = hx + '_' + hy + '_' + hz;
+                    if(!grid.has(h)) grid.set(h, []);
+                    grid.get(h).push(i);
+                }
+
+                const minDist = PARTICLE_RADIUS * 2;
+                const minSq = minDist * minDist;
+
+                for(let i=0; i < NUM_PARTICLES; i++) {
+                    let px = positions[i*3], py = positions[i*3+1], pz = positions[i*3+2];
+                    let hx = Math.floor(px / cellSize);
+                    let hy = Math.floor(py / cellSize);
+                    let hz = Math.floor(pz / cellSize);
+
+                    for(let dx=-1; dx<=1; dx++) {
+                        for(let dy=-1; dy<=1; dy++) {
+                            for(let dz=-1; dz<=1; dz++) {
+                                let cell = grid.get((hx+dx) + '_' + (hy+dy) + '_' + (hz+dz));
+                                if (cell) {
+                                    for(let j=0; j<cell.length; j++) {
+                                        let idx2 = cell[j];
+                                        if (i < idx2) {
+                                            let diffx = px - positions[idx2*3];
+                                            let diffy = py - positions[idx2*3+1];
+                                            let diffz = pz - positions[idx2*3+2];
+                                            let distSq = diffx*diffx + diffy*diffy + diffz*diffz;
+                                            
+                                            if (distSq < minSq && distSq > 0.0001) {
+                                                let dist = Math.sqrt(distSq);
+                                                let overlap = minDist - dist;
+                                                let nx = diffx / dist, ny = diffy / dist, nz = diffz / dist;
+                                                
+                                                // Push apart softly for liquid, harder for gas
+                                                let pushFactor = isLiquid ? 0.3 : 0.5;
+                                                let push = overlap * pushFactor;
+                                                positions[i*3] += nx * push;
+                                                positions[i*3+1] += ny * push;
+                                                positions[i*3+2] += nz * push;
+                                                positions[idx2*3] -= nx * push;
+                                                positions[idx2*3+1] -= ny * push;
+                                                positions[idx2*3+2] -= nz * push;
+                                                
+                                                // Velocity exchange
+                                                let dv = ((velocities[i*3]*nx + velocities[i*3+1]*ny + velocities[i*3+2]*nz) - 
+                                                          (velocities[idx2*3]*nx + velocities[idx2*3+1]*ny + velocities[idx2*3+2]*nz)) * 0.5;
+                                                
+                                                velocities[i*3] -= nx * dv;
+                                                velocities[i*3+1] -= ny * dv;
+                                                velocities[i*3+2] -= nz * dv;
+                                                velocities[idx2*3] += nx * dv;
+                                                velocities[idx2*3+1] += ny * dv;
+                                                velocities[idx2*3+2] += nz * dv;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Update InstancedMesh matrices
+            for(let i=0; i<NUM_PARTICLES; i++) {
+                dummy.position.set(positions[i*3], positions[i*3+1], positions[i*3+2]);
+                dummy.updateMatrix();
+                instancedMesh.setMatrixAt(i, dummy.matrix);
+            }
+            instancedMesh.instanceMatrix.needsUpdate = true;
+
+            return { isSolid, isLiquid, isGas, heatFactor };
+        }
+
+        // --- Render Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            
+            const state = updatePhysics();
+
+            // Color & Lighting Updates
+            let targetColor = COLORS.solid.clone();
+            if (state.isGas) {
+                targetColor = COLORS.gas.clone();
+            } else if (state.isLiquid) {
+                targetColor = COLORS.liquid.clone();
+            }
+
+            // Smooth color transition
+            material.color.lerp(targetColor, 0.05);
+            material.emissive.copy(material.color).multiplyScalar(0.3);
+            
+            heatLight.color.copy(material.color);
+            heatLight.intensity = state.heatFactor * 2;
+            plateMat.emissive.setHex(0xef4444).multiplyScalar(state.heatFactor * 0.8);
+
+            // Update UI
+            updateUI(state.heatFactor, state.isSolid, state.isLiquid, state.isGas, material.color);
+
+            renderer.render(scene, camera);
+        }
+
+        function updateUI(heatFactor, isSolid, isLiquid, isGas, currentColor) {
+            // Thermometer
+            thermoFluid.style.height = (5 + heatFactor * 95) + '%';
+            const hexColor = '#' + currentColor.getHexString();
+            thermoFluid.style.backgroundColor = hexColor;
+            thermoBulb.style.backgroundColor = hexColor;
+
+            // Pressure Gauge
+            smoothedPressure += (currentPressure - smoothedPressure) * 0.1;
+            // Pressure spikes highly in gas
+            let displayPressure = isGas ? smoothedPressure * 0.2 : smoothedPressure * 0.05;
+            let rotation = Math.min(270, displayPressure);
+            pressureNeedle.style.transform = `rotate(${rotation}deg)`;
+
+            // State Text
+            if (isSolid) {
+                stateText.innerText = "SOLID";
+                stateText.style.color = '#38bdf8';
+            } else if (isLiquid) {
+                stateText.innerText = "LIQUID";
+                stateText.style.color = '#f59e0b';
+            } else {
+                stateText.innerText = "GAS";
+                stateText.style.color = '#ef4444';
+            }
+        }
+
+        // Window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start
+        animate();
+    </script>
+</body>
+</html>
