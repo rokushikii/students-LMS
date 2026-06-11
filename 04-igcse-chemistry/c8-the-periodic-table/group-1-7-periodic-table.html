@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group 1 & 7 Periodic Table Trends</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366F1;
+            --primary-hover: #4F46E5;
+            --bg: #0F172A;
+            --surface: #1E293B;
+            --surface-hover: #334155;
+            --text: #F8FAFC;
+            --text-muted: #94A3B8;
+            --accent: #10B981;
+            --accent-hover: #059669;
+            --danger: #EF4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background-color: var(--surface);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-right: 1px solid #334155;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .sidebar h1 {
+            font-size: 22px;
+            margin-bottom: 25px;
+            background: linear-gradient(to right, #38BDF8, #818CF8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .nav-item {
+            padding: 14px 18px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            text-align: left;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid transparent;
+        }
+
+        .nav-item span.group {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #64748B;
+            margin-bottom: 6px;
+            font-weight: 800;
+            transition: color 0.3s;
+        }
+
+        .nav-item:hover {
+            background-color: var(--surface-hover);
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background-color: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+            color: white;
+            box-shadow: inset 4px 0 0 var(--primary);
+        }
+        
+        .nav-item.active span.group { color: #818CF8; }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .tab-content.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header { margin-bottom: 25px; }
+        .header h2 { font-size: 32px; margin-bottom: 10px; font-weight: 800; }
+        .header p { color: var(--text-muted); line-height: 1.6; font-size: 16px; max-width: 800px;}
+
+        /* Simulation Layout */
+        .sim-layout {
+            display: flex;
+            gap: 25px;
+            flex: 1;
+            min-height: 400px;
+        }
+
+        .canvas-container {
+            flex: 2.5;
+            background: #020617;
+            border-radius: 16px;
+            border: 1px solid #334155;
+            position: relative;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+            display: flex;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 16px;
+        }
+
+        .controls-panel {
+            flex: 1;
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748B;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .element-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .element-btn {
+            background: #334155;
+            border: 2px solid transparent;
+            color: white;
+            padding: 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+
+        .element-btn:hover { background: #475569; transform: translateY(-2px); }
+        
+        .element-btn.active {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.2);
+            color: #C7D2FE;
+        }
+
+        .action-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+        .action-btn:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); }
+        .action-btn:active { transform: translateY(1px); }
+
+        .info-card {
+            background: #0B1120;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+            margin-top: auto;
+        }
+
+        .info-card h3 { font-size: 18px; color: #38BDF8; margin-bottom: 8px; }
+        .info-card p { font-size: 14px; color: #CBD5E1; line-height: 1.6; }
+        .data-point { font-size: 28px; font-weight: 800; color: #FCD34D; margin: 15px 0; display: block; }
+        
+        .reaction-msg {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.9);
+            background: rgba(255, 255, 255, 0.95);
+            color: #0F172A;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 16px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 20;
+        }
+
+        .reaction-msg.show {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h1>Periodic Trends</h1>
+        <button class="nav-item active" onclick="switchTab('g1-mp')">
+            <span class="group">Group 1 (Alkali Metals)</span>
+            Melting & Boiling Points
+        </button>
+        <button class="nav-item" onclick="switchTab('g1-react')">
+            <span class="group">Group 1 (Alkali Metals)</span>
+            Reactivity Animation
+        </button>
+        <button class="nav-item" onclick="switchTab('g7-mp')">
+            <span class="group">Group 7 (Halogens)</span>
+            Melting & Boiling Points
+        </button>
+        <button class="nav-item" onclick="switchTab('g7-react')">
+            <span class="group">Group 7 (Halogens)</span>
+            Reactivity Animation
+        </button>
+    </div>
+
+    <div class="main-content">
+        
+        <!-- Tab 1: Group 1 MP -->
+        <div id="g1-mp" class="tab-content active">
+            <div class="header">
+                <h2>Group 1: Melting Points (Metallic Bonding)</h2>
+                <p>Down Group 1, atomic radius increases. The distance between the positive nucleus and the sea of delocalized electrons becomes greater. This weakens the electrostatic attraction (metallic bond), causing the melting point to decrease.</p>
+            </div>
+            <div class="sim-layout">
+                <div class="canvas-container">
+                    <canvas id="canvas-g1-mp"></canvas>
+                </div>
+                <div class="controls-panel">
+                    <div>
+                        <div class="section-label">Select Element</div>
+                        <div class="element-grid">
+                            <button class="element-btn active" onclick="setG1MP('Li')" id="btn-g1-mp-Li">Lithium (Li)</button>
+                            <button class="element-btn" onclick="setG1MP('Na')" id="btn-g1-mp-Na">Sodium (Na)</button>
+                            <button class="element-btn" onclick="setG1MP('K')" id="btn-g1-mp-K">Potassium (K)</button>
+                            <button class="element-btn" onclick="setG1MP('Rb')" id="btn-g1-mp-Rb">Rubidium (Rb)</button>
+                            <button class="element-btn" onclick="setG1MP('Cs')" id="btn-g1-mp-Cs">Cesium (Cs)</button>
+                            <button class="element-btn" onclick="setG1MP('Fr')" id="btn-g1-mp-Fr">Francium (Fr)</button>
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <h3 id="g1-mp-title">Lithium</h3>
+                        <span class="data-point" id="g1-mp-data">180.5°C</span>
+                        <p id="g1-mp-desc">Smallest atomic radius. Strongest electrostatic attraction between nucleus and delocalized electrons.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Group 1 Reactivity -->
+        <div id="g1-react" class="tab-content">
+            <div class="header">
+                <h2>Group 1: Reactivity (Losing an Electron)</h2>
+                <p>Group 1 metals react by losing their single outer valence electron. Going down the group, the outer electron is further away and heavily shielded by inner shells. This makes it easier to lose, meaning elements at the bottom are more reactive.</p>
+            </div>
+            <div class="sim-layout">
+                <div class="canvas-container">
+                    <div id="msg-g1-react" class="reaction-msg">Electron Lost!</div>
+                    <canvas id="canvas-g1-react"></canvas>
+                </div>
+                <div class="controls-panel">
+                    <div>
+                        <div class="section-label">Select Element</div>
+                        <div class="element-grid">
+                            <button class="element-btn active" onclick="setG1React('Li')" id="btn-g1-react-Li">Lithium (Li)</button>
+                            <button class="element-btn" onclick="setG1React('Na')" id="btn-g1-react-Na">Sodium (Na)</button>
+                            <button class="element-btn" onclick="setG1React('K')" id="btn-g1-react-K">Potassium (K)</button>
+                            <button class="element-btn" onclick="setG1React('Rb')" id="btn-g1-react-Rb">Rubidium (Rb)</button>
+                            <button class="element-btn" onclick="setG1React('Cs')" id="btn-g1-react-Cs">Cesium (Cs)</button>
+                            <button class="element-btn" onclick="setG1React('Fr')" id="btn-g1-react-Fr">Francium (Fr)</button>
+                        </div>
+                    </div>
+                    <button class="action-btn" onclick="triggerG1React()" id="btn-trigger-g1">React!</button>
+                    <div class="info-card">
+                        <h3 id="g1-react-title">Lithium</h3>
+                        <p id="g1-react-desc">Valence electron is close to the nucleus. High electrostatic pull makes it less reactive.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Group 7 MP -->
+        <div id="g7-mp" class="tab-content">
+            <div class="header">
+                <h2>Group 7: Melting & Boiling Points (Intermolecular Forces)</h2>
+                <p>Group 7 elements exist as diatomic molecules (e.g., F₂, Cl₂). Going down the group, molecules become larger with more electrons. This increases the strength of the intermolecular forces (van der Waals), requiring more energy to separate them, increasing the melting/boiling point.</p>
+            </div>
+            <div class="sim-layout">
+                <div class="canvas-container">
+                    <canvas id="canvas-g7-mp"></canvas>
+                </div>
+                <div class="controls-panel">
+                    <div>
+                        <div class="section-label">Select Element</div>
+                        <div class="element-grid">
+                            <button class="element-btn active" onclick="setG7MP('F')" id="btn-g7-mp-F">Fluorine (F₂)</button>
+                            <button class="element-btn" onclick="setG7MP('Cl')" id="btn-g7-mp-Cl">Chlorine (Cl₂)</button>
+                            <button class="element-btn" onclick="setG7MP('Br')" id="btn-g7-mp-Br">Bromine (Br₂)</button>
+                            <button class="element-btn" onclick="setG7MP('I')" id="btn-g7-mp-I">Iodine (I₂)</button>
+                            <button class="element-btn" onclick="setG7MP('At')" id="btn-g7-mp-At">Astatine (At₂)</button>
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <h3 id="g7-mp-title">Fluorine</h3>
+                        <span class="data-point" id="g7-mp-data">State: Gas (BP: -188°C)</span>
+                        <p id="g7-mp-desc">Smallest molecules. Very weak intermolecular forces, so it is a gas at room temperature.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Group 7 Reactivity -->
+        <div id="g7-react" class="tab-content">
+            <div class="header">
+                <h2>Group 7: Reactivity (Gaining an Electron)</h2>
+                <p>Group 7 elements react by gaining one electron to complete their outer shell. Going down the group, the outer shell is further away and more shielded. The nucleus has a harder time attracting a foreign electron, making the element less reactive.</p>
+            </div>
+            <div class="sim-layout">
+                <div class="canvas-container">
+                    <div id="msg-g7-react" class="reaction-msg">Electron Gained!</div>
+                    <canvas id="canvas-g7-react"></canvas>
+                </div>
+                <div class="controls-panel">
+                    <div>
+                        <div class="section-label">Select Element</div>
+                        <div class="element-grid">
+                            <button class="element-btn active" onclick="setG7React('F')" id="btn-g7-react-F">Fluorine (F)</button>
+                            <button class="element-btn" onclick="setG7React('Cl')" id="btn-g7-react-Cl">Chlorine (Cl)</button>
+                            <button class="element-btn" onclick="setG7React('Br')" id="btn-g7-react-Br">Bromine (Br)</button>
+                            <button class="element-btn" onclick="setG7React('I')" id="btn-g7-react-I">Iodine (I)</button>
+                            <button class="element-btn" onclick="setG7React('At')" id="btn-g7-react-At">Astatine (At)</button>
+                        </div>
+                    </div>
+                    <button class="action-btn" onclick="triggerG7React()" id="btn-trigger-g7">React!</button>
+                    <div class="info-card">
+                        <h3 id="g7-react-title">Fluorine</h3>
+                        <p id="g7-react-desc">Small atomic radius with little shielding. Can violently attract an electron to complete its octet. Highly reactive!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    // --- Data Definitions ---
+    const g1MPData = {
+        Li: { name: 'Lithium (Li)', r: 35, dist: 120, mp: '180.5°C', color: '#F87171', desc: 'Smallest atomic radius. Strongest electrostatic attraction between nucleus and delocalized electrons.' },
+        Na: { name: 'Sodium (Na)', r: 45, dist: 160, mp: '97.8°C', color: '#FBBF24', desc: 'Larger radius. Increased distance weakens the metallic bond.' },
+        K:  { name: 'Potassium (K)', r: 55, dist: 200, mp: '63.5°C', color: '#34D399', desc: 'Large radius. Nuclei are far from the shared electrons, further lowering melting point.' },
+        Rb: { name: 'Rubidium (Rb)', r: 65, dist: 240, mp: '39.3°C', color: '#60A5FA', desc: 'Very large radius and heavy shielding makes the metallic bond very weak.' },
+        Cs: { name: 'Cesium (Cs)', r: 75, dist: 280, mp: '28.4°C', color: '#818CF8', desc: 'Extremely large radius. Cesium has an incredibly weak metallic bond.' },
+        Fr: { name: 'Francium (Fr)', r: 85, dist: 320, mp: '27.0°C', color: '#C084FC', desc: 'Largest radius in the group. The metallic bond is practically non-existent.' }
+    };
+
+    const g1ReactData = {
+        Li: { name: 'Lithium', shells: 2, r: 25, mood: 'indifferent', speed: 6, desc: 'Valence electron is close to the nucleus. High electrostatic pull makes it harder to lose (less reactive).', reactionText: 'Reacts steadily.' },
+        Na: { name: 'Sodium', shells: 3, r: 35, mood: 'angry', speed: 12, desc: 'Extra shell increases shielding. Valence electron is further away and easier to lose (more reactive).', reactionText: 'Reacts vigorously!' },
+        K: { name: 'Potassium', shells: 4, r: 45, mood: 'furious', speed: 22, desc: 'Large radius and high shielding. Valence electron feels very little pull and is lost rapidly (highly reactive).', reactionText: 'Reacts explosively!!' },
+        Rb: { name: 'Rubidium', shells: 5, r: 55, mood: 'furious', speed: 35, desc: 'Very large radius. Valence electron is barely held by the nucleus and is lost almost instantly.', reactionText: 'Violently explosive!!!' },
+        Cs: { name: 'Cesium', shells: 6, r: 65, mood: 'furious', speed: 50, desc: 'Massive atom with extreme shielding. Reacts dangerously with air and water.', reactionText: 'EXTREME REACTION!!!!' },
+        Fr: { name: 'Francium', shells: 7, r: 70, mood: 'furious', speed: 70, desc: 'Largest alkali metal. Highly radioactive, valence electron is lost instantly.', reactionText: '☢️ MAXIMUM REACTIVITY ☢️' }
+    };
+
+    const g7MPData = {
+        F: { name: 'Fluorine', r: 15, state: 'Gas', bp: '-188°C', color: '#FEF08A', desc: 'Smallest molecules. Very weak intermolecular forces, so it is a rapid-moving gas at room temp.' },
+        Cl: { name: 'Chlorine', r: 22, state: 'Gas', bp: '-34°C', color: '#86EFAC', desc: 'Slightly larger molecules. Stronger intermolecular forces but still a gas.' },
+        Br: { name: 'Bromine', r: 32, state: 'Liquid', bp: '59°C', color: '#B91C1C', desc: 'Larger molecules. Intermolecular forces are strong enough to hold it as a dense liquid.' },
+        I: { name: 'Iodine', r: 45, state: 'Solid', bp: '184°C', color: '#6B21A8', desc: 'Largest molecules. Strong intermolecular forces lock it into a solid lattice at room temp.' },
+        At: { name: 'Astatine', r: 55, state: 'Solid', bp: '337°C', color: '#1E293B', desc: 'Massive, radioactive molecules. Extreme intermolecular forces make it a dark solid.' }
+    };
+
+    const g7ReactData = {
+        F: { name: 'Fluorine', shells: 2, r: 20, mood: 'furious', pullForce: 0.15, desc: 'Small atomic radius with little shielding. The nucleus exerts a massive pull on foreign electrons. Highly reactive!' },
+        Cl: { name: 'Chlorine', shells: 3, r: 30, mood: 'angry', pullForce: 0.08, desc: 'Larger radius. More shielding weakens the pull on foreign electrons. Less reactive than Fluorine.' },
+        Br: { name: 'Bromine', shells: 4, r: 40, mood: 'angry', pullForce: 0.04, desc: 'Large radius. Significant shielding weakens the pull on foreign electrons. Reactivity continues to drop.' },
+        I: { name: 'Iodine', shells: 5, r: 50, mood: 'indifferent', pullForce: 0.02, desc: 'Very large radius and heavy shielding. The nucleus struggles to attract a foreign electron. Low reactivity.' },
+        At: { name: 'Astatine', shells: 6, r: 60, mood: 'indifferent', pullForce: 0.01, desc: 'Massive radius and extreme shielding. Barely attracts foreign electrons. Least reactive halogen.' }
+    };
+
+    // --- State Management ---
+    let activeTab = 'g1-mp';
+    let animId = null;
+    let canvas, ctx;
+
+    // Current Selection State
+    let cg1mp = 'Li';
+    let cg1react = 'Li';
+    let cg7mp = 'F';
+    let cg7react = 'F';
+
+    // Animation specific states
+    let delocalizedElectrons = [];
+    let g1ReactSim = { reacting: false, done: false, ex: 0, ey: 0 };
+    let g7Molecules = [];
+    let g7ReactSim = { reacting: false, done: false, ex: 0, ey: 0 };
+
+    function initCanvas(id) {
+        if(animId) cancelAnimationFrame(animId);
+        canvas = document.getElementById(id);
+        const container = canvas.parentElement;
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        ctx = canvas.getContext('2d');
+    }
+
+    // --- Tab Switching ---
+    function switchTab(tabId) {
+        activeTab = tabId;
+        
+        // Update Nav
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+
+        // Update Content
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+
+        // Reset & Initialize corresponding simulation
+        if (tabId === 'g1-mp') setG1MP(cg1mp);
+        if (tabId === 'g1-react') setG1React(cg1react);
+        if (tabId === 'g7-mp') setG7MP(cg7mp);
+        if (tabId === 'g7-react') setG7React(cg7react);
+    }
+
+    // --- Draw Face Utility ---
+    function drawFace(x, y, r, mood, isStable, isG1) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        // Core
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI*2);
+        
+        if (isStable) {
+            ctx.fillStyle = '#10B981'; // Green for stable octet
+        } else {
+            if (isG1) {
+                if (mood === 'furious') ctx.fillStyle = '#EF4444'; // Red
+                else if (mood === 'angry') ctx.fillStyle = '#F87171'; // Light red
+                else ctx.fillStyle = '#FCA5A5'; // Pinkish
+            } else {
+                if (mood === 'furious') ctx.fillStyle = '#EF4444';
+                else if (mood === 'angry') ctx.fillStyle = '#F59E0B';
+                else ctx.fillStyle = '#D8B4FE'; // Light purple
+            }
+        }
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#0F172A';
+        ctx.stroke();
+
+        if (isStable) {
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${r*0.7}px Inter`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(isG1 ? '+' : '-', 0, 0);
+        } else {
+            // Eyes
+            ctx.fillStyle = 'white';
+            ctx.beginPath(); ctx.arc(-r*0.3, -r*0.2, r*0.25, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.arc(r*0.3, -r*0.2, r*0.25, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            
+            // Pupils
+            ctx.fillStyle = '#0F172A';
+            ctx.beginPath(); ctx.arc(-r*0.3, -r*0.2, r*0.1, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(r*0.3, -r*0.2, r*0.1, 0, Math.PI*2); ctx.fill();
+
+            // Eyebrows
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#0F172A';
+            ctx.beginPath();
+            if (mood === 'furious') {
+                ctx.moveTo(-r*0.6, -r*0.6); ctx.lineTo(-r*0.1, -r*0.3);
+                ctx.moveTo(r*0.6, -r*0.6); ctx.lineTo(r*0.1, -r*0.3);
+            } else if (mood === 'angry') {
+                ctx.moveTo(-r*0.5, -r*0.5); ctx.lineTo(-r*0.1, -r*0.35);
+                ctx.moveTo(r*0.5, -r*0.5); ctx.lineTo(r*0.1, -r*0.35);
+            } else {
+                ctx.moveTo(-r*0.5, -r*0.4); ctx.lineTo(-r*0.1, -r*0.4);
+                ctx.moveTo(r*0.5, -r*0.4); ctx.lineTo(r*0.1, -r*0.4);
+            }
+            ctx.stroke();
+
+            // Mouth
+            ctx.beginPath();
+            if (mood === 'furious') {
+                ctx.arc(0, r*0.3, r*0.3, 0, Math.PI, false);
+                ctx.fillStyle = '#0F172A'; ctx.fill();
+            } else if (mood === 'angry') {
+                ctx.arc(0, r*0.4, r*0.2, Math.PI, 0, false);
+                ctx.stroke();
+            } else {
+                ctx.moveTo(-r*0.2, r*0.3); ctx.lineTo(r*0.2, r*0.3);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+
+    function drawShells(cx, cy, shells, baseR, hideOuterElectron, extraElectronR) {
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        
+        let shellSpacing = 30;
+        
+        for(let i=1; i<=shells; i++) {
+            let r = baseR + i*shellSpacing;
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.arc(cx, cy, r, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw electrons on shells
+            let numElectrons = i === 1 ? 2 : 8; // simplified octet
+            if (i === shells) numElectrons = 1; // outer shell for G1
+            
+            // For G7 drawing, we want 7 outer electrons
+            if (activeTab === 'g7-react' && i === shells) numElectrons = 7;
+
+            for(let j=0; j<numElectrons; j++) {
+                // If it's the outer shell and we're animating the reaction for G1, skip it
+                if (activeTab === 'g1-react' && i === shells && hideOuterElectron) continue;
+                
+                let angle = (Math.PI * 2 / numElectrons) * j;
+                // Add a small rotation to make it look dynamic
+                angle += performance.now() / 2000 * (i%2==0?1:-1); 
+                
+                let ex = cx + Math.cos(angle) * r;
+                let ey = cy + Math.sin(angle) * r;
+
+                ctx.beginPath();
+                ctx.arc(ex, ey, 4, 0, Math.PI*2);
+                ctx.fillStyle = '#38BDF8';
+                ctx.fill();
+            }
+        }
+    }
+
+
+    // --- Simulation 1: Group 1 MP ---
+    function setG1MP(element) {
+        cg1mp = element;
+        updateUIBtns('g1-mp', element);
+        const data = g1MPData[element];
+        
+        document.getElementById('g1-mp-title').innerText = data.name;
+        document.getElementById('g1-mp-data').innerText = `Melting Point: ${data.mp}`;
+        document.getElementById('g1-mp-desc').innerText = data.desc;
+
+        initCanvas('canvas-g1-mp');
+        
+        // Init Electrons
+        delocalizedElectrons = [];
+        for(let i = 0; i < 70; i++) {
+            delocalizedElectrons.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4
+            });
+        }
+        loopG1MP();
+    }
+
+    function loopG1MP() {
+        if(activeTab !== 'g1-mp') return;
+        
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.4)'; // Motion blur trail
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        const data = g1MPData[cg1mp];
+
+        // Draw electrons
+        ctx.fillStyle = '#38BDF8';
+        delocalizedElectrons.forEach(e => {
+            e.x += e.vx; e.y += e.vy;
+            if(e.x < 0 || e.x > canvas.width) e.vx *= -1;
+            if(e.y < 0 || e.y > canvas.height) e.vy *= -1;
+            ctx.beginPath(); ctx.arc(e.x, e.y, 3, 0, Math.PI * 2); ctx.fill();
+        });
+
+        // Draw Ions
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const offset = data.dist / 2;
+
+        for(let pos of [-offset, offset]) {
+            drawFace(cx + pos, cy, data.r, 'stable', true, true);
+        }
+
+        // Distance line
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(cx - offset, cy + data.r + 30);
+        ctx.lineTo(cx + offset, cy + data.r + 30);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Arrows
+        ctx.beginPath(); ctx.moveTo(cx - offset + 10, cy + data.r + 25); ctx.lineTo(cx - offset, cy + data.r + 30); ctx.lineTo(cx - offset + 10, cy + data.r + 35); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx + offset - 10, cy + data.r + 25); ctx.lineTo(cx + offset, cy + data.r + 30); ctx.lineTo(cx + offset - 10, cy + data.r + 35); ctx.stroke();
+
+        ctx.fillStyle = 'white';
+        ctx.font = '14px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText('Internuclear Distance', cx, cy + data.r + 50);
+
+        animId = requestAnimationFrame(loopG1MP);
+    }
+
+
+    // --- Simulation 2: Group 1 Reactivity ---
+    function setG1React(element) {
+        cg1react = element;
+        updateUIBtns('g1-react', element);
+        const data = g1ReactData[element];
+        
+        document.getElementById('g1-react-title').innerText = data.name;
+        document.getElementById('g1-react-desc').innerText = data.desc;
+        document.getElementById('btn-trigger-g1').innerText = "React!";
+        document.getElementById('btn-trigger-g1').style.background = "var(--accent)";
+        document.getElementById('msg-g1-react').classList.remove('show');
+
+        initCanvas('canvas-g1-react');
+        
+        // Reset state
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        let outerR = data.r + data.shells * 30;
+        
+        g1ReactSim = { reacting: false, done: false, ex: cx + outerR, ey: cy };
+        loopG1React();
+    }
+
+    function triggerG1React() {
+        if(g1ReactSim.reacting || g1ReactSim.done) {
+            setG1React(cg1react); // reset
+            return;
+        }
+        g1ReactSim.reacting = true;
+        document.getElementById('btn-trigger-g1').innerText = "Reset";
+        document.getElementById('btn-trigger-g1').style.background = "#64748B";
+    }
+
+    function loopG1React() {
+        if(activeTab !== 'g1-react') return;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const data = g1ReactData[cg1react];
+        const cx = canvas.width / 2 - 50; // offset left slightly
+        const cy = canvas.height / 2;
+
+        let isStable = g1ReactSim.done;
+        
+        // Draw Atom
+        drawShells(cx, cy, data.shells, data.r, g1ReactSim.reacting || g1ReactSim.done, 0);
+        drawFace(cx, cy, data.r, data.mood, isStable, true);
+
+        // Animate Outer Electron
+        if (g1ReactSim.reacting) {
+            g1ReactSim.ex += data.speed;
+            
+            // Draw motion trail
+            ctx.beginPath();
+            ctx.moveTo(g1ReactSim.ex - 30, g1ReactSim.ey);
+            ctx.lineTo(g1ReactSim.ex, g1ReactSim.ey);
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            if (g1ReactSim.ex > canvas.width + 50) {
+                g1ReactSim.reacting = false;
+                g1ReactSim.done = true;
+                
+                // Show floating text
+                let msg = document.getElementById('msg-g1-react');
+                msg.innerText = data.reactionText;
+                msg.classList.add('show');
+            }
+        }
+
+        // Draw the moving electron
+        if (!isStable) {
+            ctx.beginPath();
+            ctx.arc(g1ReactSim.ex, g1ReactSim.ey, 6, 0, Math.PI*2);
+            ctx.fillStyle = '#38BDF8';
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw minus sign
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('-', g1ReactSim.ex, g1ReactSim.ey);
+        }
+
+        animId = requestAnimationFrame(loopG1React);
+    }
+
+
+    // --- Simulation 3: Group 7 MP ---
+    function setG7MP(element) {
+        cg7mp = element;
+        updateUIBtns('g7-mp', element);
+        const data = g7MPData[element];
+        
+        document.getElementById('g7-mp-title').innerText = data.name;
+        document.getElementById('g7-mp-data').innerText = `State: ${data.state} (BP: ${data.bp})`;
+        document.getElementById('g7-mp-desc').innerText = data.desc;
+
+        initCanvas('canvas-g7-mp');
+        
+        g7Molecules = [];
+        let count = element === 'I' ? 25 : 20;
+        
+        if (data.state === 'Solid') {
+            // Grid layout for Solid
+            let cols = 5;
+            let startX = canvas.width/2 - (cols * data.r*3)/2 + data.r;
+            let startY = canvas.height/2 - 50;
+            let row = 0; let col = 0;
+            for(let i=0; i<count; i++) {
+                g7Molecules.push({
+                    x: startX + col * (data.r * 2.5),
+                    y: startY + row * (data.r * 2.5),
+                    baseX: startX + col * (data.r * 2.5),
+                    baseY: startY + row * (data.r * 2.5),
+                    vx: 0, vy: 0, angle: Math.PI/4
+                });
+                col++;
+                if(col >= cols) { col = 0; row++; }
+            }
+        } else {
+            // Random layout for Gas/Liquid
+            for(let i=0; i<count; i++) {
+                let speedMult = data.state === 'Gas' ? 1 : 0.2;
+                let baseSpeed = element === 'F' ? 8 : 4;
+                g7Molecules.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * (data.state === 'Liquid' ? canvas.height/2 : canvas.height) + (data.state === 'Liquid' ? canvas.height/2 : 0),
+                    vx: (Math.random()-0.5) * baseSpeed * speedMult,
+                    vy: (Math.random()-0.5) * baseSpeed * speedMult,
+                    angle: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random()-0.5) * 0.2 * speedMult
+                });
+            }
+        }
+
+        loopG7MP();
+    }
+
+    function loopG7MP() {
+        if(activeTab !== 'g7-mp') return;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const data = g7MPData[cg7mp];
+
+        g7Molecules.forEach(m => {
+            if (data.state === 'Solid') {
+                // Jitter
+                m.x = m.baseX + (Math.random()-0.5)*2;
+                m.y = m.baseY + (Math.random()-0.5)*2;
+            } else {
+                m.x += m.vx;
+                m.y += m.vy;
+                m.angle += m.rotSpeed;
+
+                // Bounce walls
+                let pad = data.r * 1.5;
+                if(m.x < pad || m.x > canvas.width - pad) m.vx *= -1;
+                
+                if (data.state === 'Liquid') {
+                    // Keep at bottom mostly
+                    if(m.y > canvas.height - pad) m.vy *= -1;
+                    if(m.y < canvas.height - 150) m.vy += 0.5; // gravity pull
+                } else {
+                    if(m.y < pad || m.y > canvas.height - pad) m.vy *= -1;
+                }
+            }
+
+            // Draw Diatomic
+            ctx.save();
+            ctx.translate(m.x, m.y);
+            ctx.rotate(m.angle);
+            ctx.fillStyle = data.color;
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.lineWidth = 2;
+            // Atom 1
+            ctx.beginPath(); ctx.arc(-data.r*0.6, 0, data.r, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            // Atom 2
+            ctx.beginPath(); ctx.arc(data.r*0.6, 0, data.r, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.restore();
+        });
+
+        animId = requestAnimationFrame(loopG7MP);
+    }
+
+    // --- Simulation 4: Group 7 Reactivity ---
+    function setG7React(element) {
+        cg7react = element;
+        updateUIBtns('g7-react', element);
+        const data = g7ReactData[element];
+        
+        document.getElementById('g7-react-title').innerText = data.name;
+        document.getElementById('g7-react-desc').innerText = data.desc;
+        document.getElementById('btn-trigger-g7').innerText = "React!";
+        document.getElementById('btn-trigger-g7').style.background = "var(--accent)";
+        document.getElementById('msg-g7-react').classList.remove('show');
+
+        initCanvas('canvas-g7-react');
+        
+        const cx = canvas.width / 2 + 50; // offset right slightly
+        const cy = canvas.height / 2;
+        
+        g7ReactSim = { reacting: false, done: false, ex: 50, ey: cy, cx: cx, cy: cy };
+        loopG7React();
+    }
+
+    function triggerG7React() {
+        if(g7ReactSim.reacting || g7ReactSim.done) {
+            setG7React(cg7react); // reset
+            return;
+        }
+        g7ReactSim.reacting = true;
+        document.getElementById('btn-trigger-g7').innerText = "Reset";
+        document.getElementById('btn-trigger-g7').style.background = "#64748B";
+    }
+
+    function loopG7React() {
+        if(activeTab !== 'g7-react') return;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const data = g7ReactData[cg7react];
+        const cx = g7ReactSim.cx;
+        const cy = g7ReactSim.cy;
+
+        let isStable = g7ReactSim.done;
+        let outerR = data.r + data.shells * 30;
+
+        // Draw Atom
+        drawShells(cx, cy, data.shells, data.r, false, 0); // never hide outer for G7, they have 7
+        drawFace(cx, cy, data.r, data.mood, isStable, false);
+
+        // Animate incoming electron
+        if (g7ReactSim.reacting) {
+            // Target the empty spot on the outer shell (let's say right side)
+            let targetX = cx - outerR;
+            let targetY = cy;
+            
+            let dx = targetX - g7ReactSim.ex;
+            let dy = targetY - g7ReactSim.ey;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            
+            // Accel towards
+            g7ReactSim.ex += dx * data.pullForce;
+            g7ReactSim.ey += dy * data.pullForce;
+
+            // Wobble
+            g7ReactSim.ey += Math.sin(performance.now()/50)*2;
+
+            if (dist < 5) {
+                g7ReactSim.reacting = false;
+                g7ReactSim.done = true;
+                g7ReactSim.ex = targetX;
+                g7ReactSim.ey = targetY;
+                
+                let msg = document.getElementById('msg-g7-react');
+                msg.innerText = 'Stable Octet Formed!';
+                msg.classList.add('show');
+            }
+        } else if (!g7ReactSim.done) {
+            // Wander before react
+            g7ReactSim.ex = 50 + Math.sin(performance.now()/300)*10;
+            g7ReactSim.ey = cy + Math.cos(performance.now()/200)*20;
+        }
+
+        // Draw the free/captured electron
+        ctx.beginPath();
+        ctx.arc(g7ReactSim.ex, g7ReactSim.ey, 6, 0, Math.PI*2);
+        ctx.fillStyle = '#38BDF8';
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 12px Inter';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('-', g7ReactSim.ex, g7ReactSim.ey);
+
+        animId = requestAnimationFrame(loopG7React);
+    }
+
+    // --- Helpers ---
+    function updateUIBtns(prefix, element) {
+        document.querySelectorAll(`[id^="btn-${prefix}"]`).forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-${prefix}-${element}`).classList.add('active');
+    }
+
+    // --- Boot ---
+    window.addEventListener('resize', () => {
+        if (activeTab === 'g1-mp') setG1MP(cg1mp);
+        if (activeTab === 'g1-react') setG1React(cg1react);
+        if (activeTab === 'g7-mp') setG7MP(cg7mp);
+        if (activeTab === 'g7-react') setG7React(cg7react);
+    });
+
+    // Start
+    setTimeout(() => switchTab('g1-mp'), 100);
+
+</script>
+</body>
+</html>

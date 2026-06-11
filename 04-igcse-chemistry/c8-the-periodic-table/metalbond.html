@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group 1 Metallic Bonding Simulator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            background-color: #e0e0e0;
+            color: #555;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        button.active {
+            border-color: #333;
+            color: white;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+        canvas {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 700px;
+        }
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .mp-display {
+            font-size: 28px;
+            font-weight: bold;
+            color: #d32f2f;
+        }
+        .info-box {
+            background: #fff3e0;
+            padding: 15px;
+            border-left: 5px solid #ff9800;
+            border-radius: 4px;
+            text-align: left;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Group 1: Electrostatic Force & Melting Points</h2>
+    
+    <div class="controls" id="buttonContainer">
+        </div>
+
+    <canvas id="simCanvas" width="700" height="350"></canvas>
+
+    <div class="info-panel">
+        <div class="mp-display" id="mpDisplay">Melting Point: --</div>
+        <div class="info-box" id="infoText">Select an element above to see its bonding properties.</div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let currentState = 'Li';
+    let electrons = [];
+    
+    // Configuration for all Group 1 Elements
+    // Radius (r) and Distance (d) scale up to show increasing atomic size
+    const elements = {
+        Li: { name: 'Lithium (Li)', r: 25, d: 100, color: '#f44336', mp: '180.5°C', text: '<strong>Lithium (Period 2):</strong> Only 2 electron shells. The nuclei are very close to the shared electrons, creating a very strong electrostatic pull and the highest melting point in the group.' },
+        Na: { name: 'Sodium (Na)', r: 35, d: 140, color: '#ff9800', mp: '97.8°C', text: '<strong>Sodium (Period 3):</strong> 3 electron shells. The extra shell increases distance and shielding, weakening the metallic bond compared to Lithium.' },
+        K:  { name: 'Potassium (K)', r: 45, d: 180, color: '#ffeb3b', mp: '63.5°C', text: '<strong>Potassium (Period 4):</strong> 4 electron shells. The atoms are getting significantly larger, pushing the positive nuclei further apart from the delocalized electrons.' },
+        Rb: { name: 'Rubidium (Rb)', r: 55, d: 220, color: '#4caf50', mp: '39.3°C', text: '<strong>Rubidium (Period 5):</strong> 5 electron shells. The electrostatic attraction is now quite weak due to the large distance and heavy inner-shell shielding.' },
+        Cs: { name: 'Cesium (Cs)', r: 65, d: 260, color: '#2196f3', mp: '28.4°C', text: '<strong>Cesium (Period 6):</strong> 6 electron shells. Cesium has an extremely weak metallic bond and will literally melt in the palm of your hand.' },
+        Fr: { name: 'Francium (Fr)', r: 75, d: 300, color: '#9c27b0', mp: '~27.0°C', text: '<strong>Francium (Period 7):</strong> 7 electron shells. Highly radioactive and extremely large. The outermost electrons feel almost no pull from the nucleus.' }
+    };
+
+    function initUI() {
+        const container = document.getElementById('buttonContainer');
+        for (const [key, data] of Object.entries(elements)) {
+            const btn = document.createElement('button');
+            btn.id = `btn-${key}`;
+            btn.innerText = data.name;
+            btn.style.backgroundColor = data.color;
+            btn.onclick = () => setState(key);
+            container.appendChild(btn);
+        }
+        setState('Li'); // Set default
+    }
+
+    function initParticles() {
+        electrons = [];
+        // Create 60 random delocalized electrons
+        for(let i = 0; i < 60; i++) {
+            electrons.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 3,
+                vy: (Math.random() - 0.5) * 3
+            });
+        }
+    }
+
+    function setState(elementKey) {
+        currentState = elementKey;
+        const conf = elements[elementKey];
+        
+        // Update Text UI
+        document.getElementById('mpDisplay').innerText = `Melting Point: ${conf.mp}`;
+        document.getElementById('infoText').innerHTML = conf.text;
+        
+        // Update Button Styles
+        for (const key of Object.keys(elements)) {
+            const btn = document.getElementById(`btn-${key}`);
+            if (key === elementKey) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+    }
+
+    function draw() {
+        // Clear with a slight fade for a motion blur effect on electrons
+        ctx.fillStyle = 'rgba(30, 30, 30, 0.4)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        const conf = elements[currentState];
+
+        // Animate Electrons
+        ctx.fillStyle = '#00e5ff';
+        electrons.forEach(e => {
+            e.x += e.vx;
+            e.y += e.vy;
+            
+            // Bounce off walls
+            if(e.x < 0 || e.x > canvas.width) e.vx *= -1;
+            if(e.y < 0 || e.y > canvas.height) e.vy *= -1;
+
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Draw Metal Ions (Simulating 2 adjacent atoms)
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const offset = conf.d / 2;
+
+        ctx.fillStyle = conf.color;
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 3;
+
+        // Left Ion
+        ctx.beginPath();
+        ctx.arc(centerX - offset, centerY, conf.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Right Ion
+        ctx.beginPath();
+        ctx.arc(centerX + offset, centerY, conf.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw '+' signs in the middle of ions
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 28px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('+', centerX - offset, centerY);
+        ctx.fillText('+', centerX + offset, centerY);
+
+        // Draw distance indicator line
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(centerX - offset, centerY + conf.r + 20);
+        ctx.lineTo(centerX + offset, centerY + conf.r + 20);
+        ctx.stroke();
+        ctx.setLineDash([]); // reset
+
+        requestAnimationFrame(draw);
+    }
+
+    initUI();
+    initParticles();
+    draw();
+</script>
+
+</body>
+</html>
