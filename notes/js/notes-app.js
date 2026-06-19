@@ -149,12 +149,44 @@ function loadNote(subtopicId, noteData, element) {
 
     const contentDiv = document.getElementById('notes-content');
     
+    // Protect Math Equations
+    let mathBlocks = [];
+    let safeContent = noteData.digitizedText;
+
+    // Hide display math $$...$$ and \[...\]
+    safeContent = safeContent.replace(/\$\$([\s\S]+?)\$\$/g, (match) => {
+        mathBlocks.push(match);
+        return `__MATH_BLOCK_${mathBlocks.length - 1}__`;
+    });
+    safeContent = safeContent.replace(/\\\[([\s\S]+?)\\\]/g, (match) => {
+        mathBlocks.push(match);
+        return `__MATH_BLOCK_${mathBlocks.length - 1}__`;
+    });
+
+    // Hide inline math $...$
+    safeContent = safeContent.replace(/\$((?:\\.|[^$])+?)\$/g, (match) => {
+        mathBlocks.push(match);
+        return `__MATH_BLOCK_${mathBlocks.length - 1}__`;
+    });
+
     // Parse Markdown
-    let htmlContent = marked.parse(noteData.digitizedText);
+    let htmlContent = marked.parse(safeContent);
     
+    // Restore Math Equations
+    mathBlocks.forEach((math, i) => {
+        htmlContent = htmlContent.replace(`__MATH_BLOCK_${i}__`, math);
+    });
+
+    // Parse GitHub Alerts
+    htmlContent = htmlContent.replace(/<blockquote>\s*<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\s*<br>|\s*)([\s\S]*?)<\/p>\s*<\/blockquote>/gi, (match, type, content) => {
+        const t = type.toUpperCase();
+        return `<div class="github-alert alert-${t.toLowerCase()}">
+                    <div class="alert-header"><strong>${t}</strong></div>
+                    <div class="alert-body">${content}</div>
+                </div>`;
+    });
+
     // Replace mermaid code blocks with div class="mermaid" for rendering
-    // marked.js converts ```mermaid to <pre><code class="language-mermaid">
-    // We need to transform it for Mermaid.js
     htmlContent = htmlContent.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<div class="mermaid">$1</div>');
 
     contentDiv.innerHTML = htmlContent;

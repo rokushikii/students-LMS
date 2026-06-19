@@ -507,3 +507,8 @@ body, html {
 [data-theme="dark"] .dot-blue { background-color: #0369a1; }
 [data-theme="dark"] .dot-pink { background-color: #be185d; }
 [data-theme="dark"] .dot-green { background-color: #15803d; }
+
+/* GitHub Alerts */
+.github-alert { padding: 16px; margin: 16px 0; border-left: 4px solid var(--primary-purple); background-color: rgba(107, 70, 193, 0.05); border-radius: 0 8px 8px 0; }
+.github-alert .alert-header { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--primary-purple); margin-bottom: 8px; }
+.github-alert .alert-body { color: var(--text-main); line-height: 1.6; }
