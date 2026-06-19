@@ -156,17 +156,17 @@ function loadNote(subtopicId, noteData, element) {
     // Hide display math $$...$$ and \[...\]
     safeContent = safeContent.replace(/\$\$([\s\S]+?)\$\$/g, (match) => {
         mathBlocks.push(match);
-        return `__MATH_BLOCK_${mathBlocks.length - 1}__`;
+        return `@@MATHBLOCK_${mathBlocks.length - 1}@@`;
     });
     safeContent = safeContent.replace(/\\\[([\s\S]+?)\\\]/g, (match) => {
         mathBlocks.push(match);
-        return `__MATH_BLOCK_${mathBlocks.length - 1}__`;
+        return `@@MATHBLOCK_${mathBlocks.length - 1}@@`;
     });
 
     // Hide inline math $...$
     safeContent = safeContent.replace(/\$((?:\\.|[^$])+?)\$/g, (match) => {
         mathBlocks.push(match);
-        return `__MATH_BLOCK_${mathBlocks.length - 1}__`;
+        return `@@MATHBLOCK_${mathBlocks.length - 1}@@`;
     });
 
     // Parse Markdown
@@ -174,7 +174,7 @@ function loadNote(subtopicId, noteData, element) {
     
     // Restore Math Equations
     mathBlocks.forEach((math, i) => {
-        htmlContent = htmlContent.replace(`__MATH_BLOCK_${i}__`, math);
+        htmlContent = htmlContent.replace(`@@MATHBLOCK_${i}@@`, () => math);
     });
 
     // Parse GitHub Alerts
