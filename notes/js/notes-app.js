@@ -244,7 +244,17 @@ function createQuizElement(quizData, quizId) {
     
     const explanation = document.createElement('div');
     explanation.className = 'quiz-explanation';
-    explanation.innerHTML = `<strong>Explanation:</strong> ${marked.parseInline(quizData.explanation)}`;
+    explanation.innerHTML = `<strong>Explanation:</strong> ${marked.parseInline(quizData.explanation || '')}`;
+
+    // Support both correctIndex (number) and answer (string) formats
+    let correctIdx = quizData.correctIndex;
+    if (correctIdx === undefined && quizData.answer) {
+        correctIdx = quizData.options.findIndex(opt => opt === quizData.answer);
+        if (correctIdx === -1) {
+            // Fuzzy match: check if answer is contained in option text
+            correctIdx = quizData.options.findIndex(opt => opt.includes(quizData.answer) || quizData.answer.includes(opt));
+        }
+    }
 
     // Check if previously answered correctly from localStorage
     const savedState = localStorage.getItem(`quiz_v2_${quizId}`);
@@ -256,7 +266,7 @@ function createQuizElement(quizData, quizId) {
         // Parse inline to allow math formulas in options
         btn.innerHTML = `<strong>${String.fromCharCode(65 + i)})</strong>&nbsp;&nbsp;${marked.parseInline(optText)}`;
         
-        if (answered && i === quizData.correctIndex) {
+        if (answered && i === correctIdx) {
             btn.classList.add('correct');
             explanation.style.display = 'block';
         }
@@ -264,7 +274,7 @@ function createQuizElement(quizData, quizId) {
         btn.onclick = () => {
             if (answered) return; // prevent changing answer after correct
             
-            if (i === quizData.correctIndex) {
+            if (i === correctIdx) {
                 btn.classList.add('correct');
                 explanation.style.display = 'block';
                 answered = true;

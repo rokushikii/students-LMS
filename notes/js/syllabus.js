@@ -203,7 +203,27 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "1.1",
-                "title": "Functions"
+                "title": "Mappings and Functions"
+            },
+            {
+                "id": "1.2",
+                "title": "Domain and Range"
+            },
+            {
+                "id": "1.3",
+                "title": "Composite Functions"
+            },
+            {
+                "id": "1.4",
+                "title": "Inverse Functions"
+            },
+            {
+                "id": "1.5",
+                "title": "Graphing Functions and Inverses"
+            },
+            {
+                "id": "1.6",
+                "title": "Modulus Functions"
             }
         ]
     },
@@ -212,7 +232,31 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "2.1",
-                "title": "Quadratic functions"
+                "title": "Introduction to Quadratic Functions"
+            },
+            {
+                "id": "2.2",
+                "title": "Completing the Square"
+            },
+            {
+                "id": "2.3",
+                "title": "Maximum and Minimum Values"
+            },
+            {
+                "id": "2.4",
+                "title": "Roots of Quadratic Equations"
+            },
+            {
+                "id": "2.5",
+                "title": "The Discriminant"
+            },
+            {
+                "id": "2.6",
+                "title": "Sketching Quadratic Graphs"
+            },
+            {
+                "id": "2.7",
+                "title": "Line-Curve Intersection"
             }
         ]
     },
@@ -221,7 +265,23 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "3.1",
-                "title": "Factors of polynomials"
+                "title": "Introduction to Polynomials"
+            },
+            {
+                "id": "3.2",
+                "title": "Polynomial Division"
+            },
+            {
+                "id": "3.3",
+                "title": "The Remainder Theorem"
+            },
+            {
+                "id": "3.4",
+                "title": "The Factor Theorem"
+            },
+            {
+                "id": "3.5",
+                "title": "Solving Cubic Equations"
             }
         ]
     },
@@ -230,7 +290,27 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "4.1",
-                "title": "Equations, inequalities and graphs"
+                "title": "The Modulus Function"
+            },
+            {
+                "id": "4.2",
+                "title": "Graphs of Modulus Functions"
+            },
+            {
+                "id": "4.3",
+                "title": "Solving Modulus Equations"
+            },
+            {
+                "id": "4.4",
+                "title": "Solving Modulus Inequalities"
+            },
+            {
+                "id": "4.5",
+                "title": "Solving Non-linear Inequalities"
+            },
+            {
+                "id": "4.6",
+                "title": "Intersecting Graphs and Inequalities"
             }
         ]
     },
@@ -239,7 +319,15 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "5.1",
-                "title": "Simultaneous equations"
+                "title": "Introduction"
+            },
+            {
+                "id": "5.2",
+                "title": "Substitution Method"
+            },
+            {
+                "id": "5.3",
+                "title": "Solving Graphically"
             }
         ]
     },
@@ -248,7 +336,27 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "6.1",
-                "title": "Logarithmic and exponential functions"
+                "title": "Exponentials and Logarithms"
+            },
+            {
+                "id": "6.2",
+                "title": "Rules of Logarithms"
+            },
+            {
+                "id": "6.3",
+                "title": "Natural Logarithms and e"
+            },
+            {
+                "id": "6.4",
+                "title": "Change of Base Formula"
+            },
+            {
+                "id": "6.5",
+                "title": "Solving Exponential Equations"
+            },
+            {
+                "id": "6.6",
+                "title": "Solving Logarithmic Equations"
             }
         ]
     },
@@ -257,7 +365,23 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "7.1",
-                "title": "Straight-line graphs"
+                "title": "Distance Between Two Points"
+            },
+            {
+                "id": "7.2",
+                "title": "Midpoint of a Line Segment"
+            },
+            {
+                "id": "7.3",
+                "title": "Gradient of a Straight Line"
+            },
+            {
+                "id": "7.4",
+                "title": "Equation of a Straight Line"
+            },
+            {
+                "id": "7.5",
+                "title": "Non-Linear to Linear Form"
             }
         ]
     },
@@ -266,7 +390,19 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "8.1",
-                "title": "Coordinate geometry of the circle"
+                "title": "Standard Equation of a Circle"
+            },
+            {
+                "id": "8.2",
+                "title": "General Form of a Circle"
+            },
+            {
+                "id": "8.3",
+                "title": "Line and Circle Intersection"
+            },
+            {
+                "id": "8.4",
+                "title": "Tangent Lines to a Circle"
             }
         ]
     },
@@ -275,7 +411,23 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "9.1",
-                "title": "Circular measure"
+                "title": "Introduction to Radians"
+            },
+            {
+                "id": "9.2",
+                "title": "Arc Length"
+            },
+            {
+                "id": "9.3",
+                "title": "Area of a Sector"
+            },
+            {
+                "id": "9.4",
+                "title": "Area of a Segment"
+            },
+            {
+                "id": "9.5",
+                "title": "Combined Problems"
             }
         ]
     },
@@ -284,7 +436,23 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "10.1",
-                "title": "Trigonometry"
+                "title": "Exact Trigonometric Values"
+            },
+            {
+                "id": "10.2",
+                "title": "Reciprocal Trigonometric Functions"
+            },
+            {
+                "id": "10.3",
+                "title": "The ASTC Quadrant Rule"
+            },
+            {
+                "id": "10.4",
+                "title": "Trigonometric Identities"
+            },
+            {
+                "id": "10.5",
+                "title": "Solving Trigonometric Equations"
             }
         ]
     },
@@ -293,7 +461,27 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "11.1",
-                "title": "Permutations and combinations"
+                "title": "Basic Counting Principles"
+            },
+            {
+                "id": "11.2",
+                "title": "Factorials"
+            },
+            {
+                "id": "11.3",
+                "title": "Permutations"
+            },
+            {
+                "id": "11.4",
+                "title": "Combinations"
+            },
+            {
+                "id": "11.5",
+                "title": "Arrangements with Restrictions"
+            },
+            {
+                "id": "11.6",
+                "title": "Selections with Restrictions"
             }
         ]
     },
@@ -302,7 +490,19 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "12.1",
-                "title": "Series"
+                "title": "Sequences and Series"
+            },
+            {
+                "id": "12.2",
+                "title": "Arithmetic Progressions"
+            },
+            {
+                "id": "12.3",
+                "title": "Geometric Progressions"
+            },
+            {
+                "id": "12.4",
+                "title": "Sum to Infinity"
             }
         ]
     },
@@ -311,7 +511,35 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "13.1",
-                "title": "Vectors in two dimensions"
+                "title": "Introduction to Vectors"
+            },
+            {
+                "id": "13.2",
+                "title": "Vector Representation"
+            },
+            {
+                "id": "13.3",
+                "title": "Magnitude of a Vector"
+            },
+            {
+                "id": "13.4",
+                "title": "Vector Addition and Subtraction"
+            },
+            {
+                "id": "13.5",
+                "title": "Scalar Multiplication"
+            },
+            {
+                "id": "13.6",
+                "title": "Unit Vectors"
+            },
+            {
+                "id": "13.7",
+                "title": "Position Vectors"
+            },
+            {
+                "id": "13.8",
+                "title": "Solving Geometric Problems"
             }
         ]
     },
@@ -320,7 +548,19 @@ window.syllabusConfig = {
         "subtopics": [
             {
                 "id": "14.1",
-                "title": "Calculus"
+                "title": "Differentiation Fundamentals"
+            },
+            {
+                "id": "14.2",
+                "title": "Turning Points"
+            },
+            {
+                "id": "14.3",
+                "title": "Kinematics"
+            },
+            {
+                "id": "14.4",
+                "title": "Integration"
             }
         ]
     }
