@@ -196,4 +196,133 @@ window.syllabusConfig = {
         ]
     }
 ]
+,
+    "0606-add-math": [
+    {
+        "chapter": "Chapter 1: Functions",
+        "subtopics": [
+            {
+                "id": "1.1",
+                "title": "Functions"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 2: Quadratic functions",
+        "subtopics": [
+            {
+                "id": "2.1",
+                "title": "Quadratic functions"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 3: Factors of polynomials",
+        "subtopics": [
+            {
+                "id": "3.1",
+                "title": "Factors of polynomials"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 4: Equations, inequalities and graphs",
+        "subtopics": [
+            {
+                "id": "4.1",
+                "title": "Equations, inequalities and graphs"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 5: Simultaneous equations",
+        "subtopics": [
+            {
+                "id": "5.1",
+                "title": "Simultaneous equations"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 6: Logarithmic and exponential functions",
+        "subtopics": [
+            {
+                "id": "6.1",
+                "title": "Logarithmic and exponential functions"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 7: Straight-line graphs",
+        "subtopics": [
+            {
+                "id": "7.1",
+                "title": "Straight-line graphs"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 8: Coordinate geometry of the circle",
+        "subtopics": [
+            {
+                "id": "8.1",
+                "title": "Coordinate geometry of the circle"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 9: Circular measure",
+        "subtopics": [
+            {
+                "id": "9.1",
+                "title": "Circular measure"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 10: Trigonometry",
+        "subtopics": [
+            {
+                "id": "10.1",
+                "title": "Trigonometry"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 11: Permutations and combinations",
+        "subtopics": [
+            {
+                "id": "11.1",
+                "title": "Permutations and combinations"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 12: Series",
+        "subtopics": [
+            {
+                "id": "12.1",
+                "title": "Series"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 13: Vectors in two dimensions",
+        "subtopics": [
+            {
+                "id": "13.1",
+                "title": "Vectors in two dimensions"
+            }
+        ]
+    },
+    {
+        "chapter": "Chapter 14: Calculus",
+        "subtopics": [
+            {
+                "id": "14.1",
+                "title": "Calculus"
+            }
+        ]
+    }
+]
 };
