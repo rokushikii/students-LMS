@@ -149,44 +149,12 @@ function loadNote(subtopicId, noteData, element) {
 
     const contentDiv = document.getElementById('notes-content');
     
-    // Protect Math Equations
-    let mathBlocks = [];
-    let safeContent = noteData.digitizedText;
-
-    // Hide display math $$...$$ and \[...\]
-    safeContent = safeContent.replace(/\$\$([\s\S]+?)\$\$/g, (match) => {
-        mathBlocks.push(match);
-        return `@@MATHBLOCK_${mathBlocks.length - 1}@@`;
-    });
-    safeContent = safeContent.replace(/\\\[([\s\S]+?)\\\]/g, (match) => {
-        mathBlocks.push(match);
-        return `@@MATHBLOCK_${mathBlocks.length - 1}@@`;
-    });
-
-    // Hide inline math $...$
-    safeContent = safeContent.replace(/\$((?:\\.|[^$])+?)\$/g, (match) => {
-        mathBlocks.push(match);
-        return `@@MATHBLOCK_${mathBlocks.length - 1}@@`;
-    });
-
     // Parse Markdown
-    let htmlContent = marked.parse(safeContent);
+    let htmlContent = marked.parse(noteData.digitizedText);
     
-    // Restore Math Equations
-    mathBlocks.forEach((math, i) => {
-        htmlContent = htmlContent.replace(`@@MATHBLOCK_${i}@@`, () => math);
-    });
-
-    // Parse GitHub Alerts
-    htmlContent = htmlContent.replace(/<blockquote>\s*<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\s*<br>|\s*)([\s\S]*?)<\/p>\s*<\/blockquote>/gi, (match, type, content) => {
-        const t = type.toUpperCase();
-        return `<div class="github-alert alert-${t.toLowerCase()}">
-                    <div class="alert-header"><strong>${t}</strong></div>
-                    <div class="alert-body">${content}</div>
-                </div>`;
-    });
-
     // Replace mermaid code blocks with div class="mermaid" for rendering
+    // marked.js converts ```mermaid to <pre><code class="language-mermaid">
+    // We need to transform it for Mermaid.js
     htmlContent = htmlContent.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<div class="mermaid">$1</div>');
 
     contentDiv.innerHTML = htmlContent;
@@ -244,49 +212,60 @@ function createQuizElement(quizData, quizId) {
     
     const explanation = document.createElement('div');
     explanation.className = 'quiz-explanation';
-    explanation.innerHTML = `<strong>Explanation:</strong> ${marked.parseInline(quizData.explanation || '')}`;
-
-    // Support both correctIndex (number) and answer (string) formats
-    let correctIdx = quizData.correctIndex;
-    if (correctIdx === undefined && quizData.answer) {
-        correctIdx = quizData.options.findIndex(opt => opt === quizData.answer);
-        if (correctIdx === -1) {
-            // Fuzzy match: check if answer is contained in option text
-            correctIdx = quizData.options.findIndex(opt => opt.includes(quizData.answer) || quizData.answer.includes(opt));
-        }
-    }
+    explanation.innerHTML = `<strong>Explanation:</strong> ${marked.parseInline(quizData.explanation)}`;
 
     // Check if previously answered correctly from localStorage
     const savedState = localStorage.getItem(`quiz_v2_${quizId}`);
     let answered = savedState === 'correct';
 
-    quizData.options.forEach((optText, i) => {
-        const btn = document.createElement('button');
-        btn.className = 'quiz-option';
-        // Parse inline to allow math formulas in options
-        btn.innerHTML = `<strong>${String.fromCharCode(65 + i)})</strong>&nbsp;&nbsp;${marked.parseInline(optText)}`;
+    if (quizData.options && quizData.options.length > 0) {
+        quizData.options.forEach((optText, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'quiz-option';
+            // Parse inline to allow math formulas in options
+            btn.innerHTML = `<strong>${String.fromCharCode(65 + i)})</strong>&nbsp;&nbsp;${marked.parseInline(optText)}`;
+            
+            if (answered && i === quizData.correctIndex) {
+                btn.classList.add('correct');
+                explanation.style.display = 'block';
+            }
+
+            btn.onclick = () => {
+                if (answered) return; // prevent changing answer after correct
+                
+                if (i === quizData.correctIndex) {
+                    btn.classList.add('correct');
+                    explanation.style.display = 'block';
+                    answered = true;
+                    localStorage.setItem(`quiz_v2_${quizId}`, 'correct');
+                } else {
+                    btn.classList.add('wrong');
+                    // Optional: remove wrong class after animation
+                    setTimeout(() => btn.classList.remove('wrong'), 1000);
+                }
+            };
+            optionsContainer.appendChild(btn);
+        });
+    } else {
+        // Structured Question without Options
+        const showSolBtn = document.createElement('button');
+        showSolBtn.className = 'quiz-option';
+        showSolBtn.innerHTML = `<strong>💡 Show Solution</strong>`;
+        showSolBtn.style.justifyContent = 'center';
+        showSolBtn.style.backgroundColor = '#f1f5f9';
         
-        if (answered && i === correctIdx) {
-            btn.classList.add('correct');
+        if (answered) {
+            showSolBtn.classList.add('correct');
             explanation.style.display = 'block';
         }
 
-        btn.onclick = () => {
-            if (answered) return; // prevent changing answer after correct
-            
-            if (i === correctIdx) {
-                btn.classList.add('correct');
-                explanation.style.display = 'block';
-                answered = true;
-                localStorage.setItem(`quiz_v2_${quizId}`, 'correct');
-            } else {
-                btn.classList.add('wrong');
-                // Optional: remove wrong class after animation
-                setTimeout(() => btn.classList.remove('wrong'), 1000);
-            }
+        showSolBtn.onclick = () => {
+            showSolBtn.classList.add('correct');
+            explanation.style.display = 'block';
+            localStorage.setItem(`quiz_v2_${quizId}`, 'correct');
         };
-        optionsContainer.appendChild(btn);
-    });
+        optionsContainer.appendChild(showSolBtn);
+    }
 
     container.appendChild(optionsContainer);
     container.appendChild(explanation);
