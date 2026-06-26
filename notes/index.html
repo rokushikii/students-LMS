@@ -252,6 +252,103 @@
             text-decoration: none;
             font-weight: 600;
         }
+
+        /* --- Responsive: Tablet (≤768px) --- */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 12px 20px;
+            }
+
+            .nav-right {
+                gap: 14px;
+            }
+
+            .hero {
+                padding: 50px 20px 30px;
+            }
+
+            .hero h1 {
+                font-size: 38px;
+            }
+
+            .hero p {
+                font-size: 17px;
+            }
+
+            .subject-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 24px;
+            }
+
+            .subject-card {
+                padding: 28px;
+            }
+
+            .container {
+                padding: 30px 16px 60px;
+            }
+        }
+
+        /* --- Responsive: Phone (≤480px) --- */
+        @media (max-width: 480px) {
+            .navbar {
+                padding: 10px 14px;
+            }
+
+            .logo {
+                font-size: 18px;
+            }
+
+            .nav-right {
+                gap: 10px;
+            }
+
+            .btn-card {
+                font-size: 13px;
+                padding: 10px 16px;
+            }
+
+            .hero {
+                padding: 30px 14px 20px;
+            }
+
+            .hero h1 {
+                font-size: 28px;
+                margin-bottom: 14px;
+            }
+
+            .hero p {
+                font-size: 15px;
+                margin-bottom: 20px;
+            }
+
+            .subject-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .subject-card {
+                padding: 22px;
+            }
+
+            .subject-card h2 {
+                font-size: 20px;
+            }
+
+            .card-icon {
+                font-size: 32px;
+                margin-bottom: 14px;
+            }
+
+            .container {
+                padding: 20px 12px 50px;
+            }
+
+            footer {
+                padding: 24px 14px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>

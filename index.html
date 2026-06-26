@@ -421,6 +421,199 @@
             font-size: 15px;
         }
 
+        /* ==============================
+           RESPONSIVE BREAKPOINTS
+           ============================== */
+
+        /* --- Tablet (max-width: 768px) --- */
+        @media (max-width: 768px) {
+            /* Navbar: reduce padding, stack layout */
+            .navbar {
+                padding: 12px 20px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .nav-left {
+                gap: 15px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .nav-right {
+                flex-wrap: wrap;
+                justify-content: center;
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            .search-bar {
+                width: 100%;
+                max-width: 400px;
+                flex: 1;
+            }
+
+            /* Nested dropdown: open below instead of to the right */
+            .sub-dropdown-content {
+                left: 0;
+                top: 100%;
+                min-width: 220px;
+            }
+
+            /* Hero section */
+            .hero {
+                padding: 60px 20px;
+            }
+
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+
+            .hero-buttons {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            /* Subject grid */
+            .subject-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 20px;
+            }
+
+            /* Directory titles */
+            .directory-title {
+                font-size: 28px;
+            }
+        }
+
+        /* --- Phone (max-width: 480px) --- */
+        @media (max-width: 480px) {
+            /* Navbar: compact layout */
+            .navbar {
+                padding: 10px 12px;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .nav-left {
+                gap: 10px;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .logo {
+                font-size: 18px;
+            }
+
+            .dropbtn {
+                font-size: 14px;
+                padding: 8px;
+            }
+
+            .dropdown-content {
+                min-width: 100%;
+                left: 0;
+            }
+
+            .dropdown-content a {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+
+            /* Nested dropdown: full-width below parent */
+            .sub-dropdown-content {
+                left: 0;
+                top: 100%;
+                min-width: 100%;
+                position: absolute;
+                z-index: 200;
+            }
+
+            /* Nav right: full width */
+            .nav-right {
+                width: 100%;
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+
+            .search-bar {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .nav-right .btn-primary {
+                width: 100%;
+                text-align: center;
+                margin-right: 0 !important;
+            }
+
+            /* Hero section */
+            .hero {
+                padding: 40px 15px;
+            }
+
+            .hero h1 {
+                font-size: 26px;
+            }
+
+            .hero p {
+                font-size: 14px;
+                margin-bottom: 25px;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .hero-buttons .btn-primary,
+            .hero-buttons .btn-secondary {
+                width: 100%;
+                text-align: center;
+                box-sizing: border-box;
+            }
+
+            /* Subject grid: single column */
+            .subject-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            /* Directory titles */
+            .directory-title {
+                font-size: 24px;
+            }
+
+            .directory-subtitle {
+                font-size: 14px;
+                margin-bottom: 30px;
+            }
+
+            /* Subject card adjustments */
+            .subject-header {
+                padding: 16px 18px;
+            }
+
+            .subject-body {
+                padding: 18px;
+            }
+
+            .chapter-link {
+                font-size: 13px;
+                padding: 8px 12px;
+            }
+
+            .no-results-box {
+                padding: 40px 15px;
+            }
+        }
+
     </style>
 </head>
 <body>
