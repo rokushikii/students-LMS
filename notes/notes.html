@@ -27,6 +27,7 @@
     <!-- Navigation Bar -->
     <header class="navbar">
         <div class="nav-left">
+            <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle Topics">☰</button>
             <a href="index.html" class="logo">
                 <span class="logo-icon">🔮</span> Orient LMS
             </a>
@@ -43,6 +44,9 @@
 
     <!-- Main Workspace Container -->
     <div class="app-container">
+        <!-- Overlay for closing sidebar on mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
         <!-- Sidebar Navigation -->
         <aside class="sidebar" id="sidebar">
             <div class="search-box">
@@ -71,5 +75,35 @@
     <script src="js/syllabus.js?v=2"></script>
     <script src="js/sticky-notes.js?v=2"></script>
     <script src="js/notes-app.js?v=2"></script>
+
+    <!-- Mobile Sidebar Toggle -->
+    <script>
+    (function() {
+        const toggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        if (!toggle || !sidebar || !overlay) return;
+
+        toggle.addEventListener('click', function() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        });
+
+        overlay.addEventListener('click', function() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        });
+
+        // Close sidebar when a topic is selected (mobile)
+        sidebar.addEventListener('click', function(e) {
+            if (e.target.closest('.lesson-item')) {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                }
+            }
+        });
+    })();
+    </script>
 </body>
 </html>
