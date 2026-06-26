@@ -628,3 +628,69 @@ body, html {
     fill-opacity: 0.15;
 }
 
+/* === Mobile Responsive === */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 240px;
+        min-width: 240px;
+    }
+    .navbar {
+        padding: 10px 16px;
+        height: auto;
+    }
+    .instruction-text {
+        display: none;
+    }
+    .subject-badge {
+        font-size: 12px;
+        padding: 3px 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-container {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+        min-width: 100%;
+        max-height: 40vh;
+        border-right: none;
+        border-bottom: 1px solid var(--border-light);
+    }
+    .workspace {
+        min-height: 60vh;
+    }
+    .navbar {
+        padding: 8px 12px;
+    }
+    .logo {
+        font-size: 16px;
+    }
+    .subject-badge {
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+    .btn-primary {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+    .btn-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+    }
+    .digital-note-content {
+        padding: 16px;
+    }
+    .digital-note-content h1 {
+        font-size: 1.4rem;
+    }
+    .digital-note-content h2 {
+        font-size: 1.2rem;
+    }
+    .digital-note-content p {
+        font-size: 14px;
+    }
+}
+
